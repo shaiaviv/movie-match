@@ -3,87 +3,93 @@ import { useRef, useState, useEffect } from 'react';
 const SWIPE_THRESHOLD = 80;
 
 export default function MovieCard({ movie, onVote, voted }) {
-  const [drag, setDrag] = useState({ x: 0, flying: false });
-  const dragging = useRef(false);
-  const startX = useRef(0);
-  const currentX = useRef(0);
+  const [drag, setDrag] = useState({ x: 0 });
+  const cardRef = useRef(null);
+  const state = useRef({ dragging: false, startX: 0, x: 0 });
 
-  // Attach document-level listeners so fast drags don't escape the card
   useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
+
+    function finish(x) {
+      state.current.dragging = false;
+      if (Math.abs(x) >= SWIPE_THRESHOLD) {
+        setDrag({ x: x > 0 ? 600 : -600 });
+        setTimeout(() => onVote(x > 0), 300);
+      } else {
+        setDrag({ x: 0 });
+      }
+    }
+
+    function onTouchStart(e) {
+      if (voted) return;
+      state.current.dragging = true;
+      state.current.startX = e.touches[0].clientX;
+      state.current.x = 0;
+    }
+
+    function onTouchMove(e) {
+      if (!state.current.dragging) return;
+      e.preventDefault();
+      state.current.x = e.touches[0].clientX - state.current.startX;
+      setDrag({ x: state.current.x });
+    }
+
+    function onTouchEnd() {
+      if (!state.current.dragging) return;
+      finish(state.current.x);
+    }
+
+    function onMouseDown(e) {
+      if (voted) return;
+      state.current.dragging = true;
+      state.current.startX = e.clientX;
+      state.current.x = 0;
+    }
+
     function onMouseMove(e) {
-      if (!dragging.current) return;
-      currentX.current = e.clientX - startX.current;
-      setDrag({ x: currentX.current, flying: false });
+      if (!state.current.dragging) return;
+      state.current.x = e.clientX - state.current.startX;
+      setDrag({ x: state.current.x });
     }
+
     function onMouseUp() {
-      if (!dragging.current) return;
-      dragging.current = false;
-      finish(currentX.current);
+      if (!state.current.dragging) return;
+      finish(state.current.x);
     }
+
+    card.addEventListener('touchstart', onTouchStart, { passive: true });
+    card.addEventListener('touchmove', onTouchMove, { passive: false });
+    card.addEventListener('touchend', onTouchEnd);
+    card.addEventListener('mousedown', onMouseDown);
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
+
     return () => {
+      card.removeEventListener('touchstart', onTouchStart);
+      card.removeEventListener('touchmove', onTouchMove);
+      card.removeEventListener('touchend', onTouchEnd);
+      card.removeEventListener('mousedown', onMouseDown);
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
     };
-  }, []);
-
-  function finish(x) {
-    if (Math.abs(x) >= SWIPE_THRESHOLD) {
-      setDrag({ x: x > 0 ? 600 : -600, flying: true });
-      setTimeout(() => onVote(x > 0), 300);
-    } else {
-      setDrag({ x: 0, flying: false });
-    }
-  }
-
-  function onMouseDown(e) {
-    if (voted) return;
-    dragging.current = true;
-    startX.current = e.clientX;
-    currentX.current = 0;
-  }
-
-  function onTouchStart(e) {
-    if (voted) return;
-    dragging.current = true;
-    startX.current = e.touches[0].clientX;
-    currentX.current = 0;
-  }
-
-  function onTouchMove(e) {
-    if (!dragging.current) return;
-    e.preventDefault();
-    currentX.current = e.touches[0].clientX - startX.current;
-    setDrag({ x: currentX.current, flying: false });
-  }
-
-  function onTouchEnd() {
-    if (!dragging.current) return;
-    dragging.current = false;
-    finish(currentX.current);
-  }
+  }, [voted, onVote]);
 
   const rotate = drag.x / 12;
   const likeOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_THRESHOLD));
   const nopeOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
 
-  const cardStyle = {
-    transform: `translateX(${drag.x}px) rotate(${rotate}deg)`,
-    transition: dragging.current ? 'none' : 'transform 0.35s ease',
-    cursor: voted ? 'default' : 'grab',
-    userSelect: 'none',
-    touchAction: 'none',
-  };
-
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       <div
-        style={cardStyle}
-        onMouseDown={onMouseDown}
-        onTouchStart={onTouchStart}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
+        ref={cardRef}
+        style={{
+          transform: `translateX(${drag.x}px) rotate(${rotate}deg)`,
+          transition: state.current.dragging ? 'none' : 'transform 0.35s ease',
+          cursor: voted ? 'default' : 'grab',
+          userSelect: 'none',
+          touchAction: 'pan-y',
+        }}
         className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900 select-none"
       >
         {movie.poster ? (
@@ -100,7 +106,6 @@ export default function MovieCard({ movie, onVote, voted }) {
           </div>
         )}
 
-        {/* LIKE stamp */}
         <div
           className="absolute top-8 left-6 border-4 border-green-400 text-green-400 font-black text-3xl px-3 py-1 rounded-xl rotate-[-20deg]"
           style={{ opacity: likeOpacity }}
@@ -108,7 +113,6 @@ export default function MovieCard({ movie, onVote, voted }) {
           LIKE
         </div>
 
-        {/* NOPE stamp */}
         <div
           className="absolute top-8 right-6 border-4 border-red-400 text-red-400 font-black text-3xl px-3 py-1 rounded-xl rotate-[20deg]"
           style={{ opacity: nopeOpacity }}
@@ -116,7 +120,6 @@ export default function MovieCard({ movie, onVote, voted }) {
           NOPE
         </div>
 
-        {/* Gradient overlay */}
         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pt-12">
           <h2 className="text-xl font-bold leading-tight">{movie.title}</h2>
           <div className="flex items-center gap-2 mt-1 text-sm text-gray-300">
@@ -128,7 +131,6 @@ export default function MovieCard({ movie, onVote, voted }) {
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex gap-6 mt-6">
         <button
           onClick={() => onVote(false)}
