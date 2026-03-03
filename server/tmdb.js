@@ -10,15 +10,14 @@ function shuffle(arr) {
   return arr;
 }
 
-export async function fetchMovies(apiKey) {
-  const [page1, page2] = await Promise.all([
-    fetch(`${BASE_URL}/movie/popular?api_key=${apiKey}&page=1`).then(r => r.json()),
-    fetch(`${BASE_URL}/movie/popular?api_key=${apiKey}&page=2`).then(r => r.json()),
-  ]);
+function randomPages(count, max = 10) {
+  const pages = new Set();
+  while (pages.size < count) pages.add(Math.floor(Math.random() * max) + 1);
+  return [...pages];
+}
 
-  const combined = [...(page1.results || []), ...(page2.results || [])];
-
-  const movies = combined
+function formatMovies(results) {
+  return results
     .filter(m => m.poster_path && m.title && m.overview)
     .map(m => ({
       id: m.id,
@@ -28,6 +27,18 @@ export async function fetchMovies(apiKey) {
       year: m.release_date ? m.release_date.slice(0, 4) : '?',
       rating: Math.round(m.vote_average * 10) / 10,
     }));
+}
 
-  return shuffle(movies).slice(0, 20);
+export async function fetchMovies(apiKey, genreId = null) {
+  const pages = randomPages(3);
+  const base = genreId
+    ? `${BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=100`
+    : `${BASE_URL}/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=200`;
+
+  const results = await Promise.all(
+    pages.map(p => fetch(`${base}&page=${p}`).then(r => r.json()))
+  );
+
+  const combined = results.flatMap(r => r.results || []);
+  return shuffle(formatMovies(combined)).slice(0, 20);
 }

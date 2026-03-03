@@ -30,13 +30,13 @@ io.on('connection', (socket) => {
   console.log('connect', socket.id);
 
   // ── Create Room ──────────────────────────────────────────────────────────
-  socket.on('create-room', async () => {
+  socket.on('create-room', async ({ genreId } = {}) => {
     if (!TMDB_API_KEY) {
       socket.emit('error', 'Server is missing TMDB_API_KEY. Check server/.env');
       return;
     }
     try {
-      const movies = await fetchMovies(TMDB_API_KEY);
+      const movies = await fetchMovies(TMDB_API_KEY, genreId || null);
       const roomId = createRoom(socket.id, movies);
       socket.join(roomId);
       socket.emit('room-created', { roomId, movies });
