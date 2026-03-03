@@ -1,53 +1,90 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 const SWIPE_THRESHOLD = 80;
 
 export default function MovieCard({ movie, onVote, voted }) {
   const [dragX, setDragX] = useState(0);
-  const startX = useRef(null);
+  const cardRef = useRef(null);
+  const onVoteRef = useRef(onVote);
+  const votedRef = useRef(voted);
 
-  function onPointerDown(e) {
-    if (voted) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    startX.current = e.clientX;
-  }
+  useEffect(() => { onVoteRef.current = onVote; }, [onVote]);
+  useEffect(() => { votedRef.current = voted; }, [voted]);
 
-  function onPointerMove(e) {
-    if (startX.current === null) return;
-    setDragX(e.clientX - startX.current);
-  }
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return;
 
-  function onPointerUp(e) {
-    if (startX.current === null) return;
-    const x = e.clientX - startX.current;
-    startX.current = null;
+    let startX = null;
 
-    if (Math.abs(x) >= SWIPE_THRESHOLD) {
-      setDragX(x > 0 ? 600 : -600);
-      setTimeout(() => onVote(x > 0), 300);
-    } else {
-      setDragX(0);
+    function finish(x) {
+      startX = null;
+      if (Math.abs(x) >= SWIPE_THRESHOLD) {
+        setDragX(x > 0 ? 600 : -600);
+        setTimeout(() => onVoteRef.current(x > 0), 300);
+      } else {
+        setDragX(0);
+      }
     }
-  }
+
+    function onTouchStart(e) {
+      if (votedRef.current) return;
+      startX = e.touches[0].clientX;
+    }
+    function onTouchMove(e) {
+      if (startX === null) return;
+      e.preventDefault();
+      setDragX(e.touches[0].clientX - startX);
+    }
+    function onTouchEnd(e) {
+      if (startX === null) return;
+      finish(e.changedTouches[0].clientX - startX);
+    }
+
+    function onMouseDown(e) {
+      if (votedRef.current) return;
+      startX = e.clientX;
+    }
+    function onMouseMove(e) {
+      if (startX === null) return;
+      setDragX(e.clientX - startX);
+    }
+    function onMouseUp(e) {
+      if (startX === null) return;
+      finish(e.clientX - startX);
+    }
+
+    card.addEventListener('touchstart', onTouchStart, { passive: true });
+    card.addEventListener('touchmove', onTouchMove, { passive: false });
+    card.addEventListener('touchend', onTouchEnd);
+    card.addEventListener('mousedown', onMouseDown);
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+
+    return () => {
+      card.removeEventListener('touchstart', onTouchStart);
+      card.removeEventListener('touchmove', onTouchMove);
+      card.removeEventListener('touchend', onTouchEnd);
+      card.removeEventListener('mousedown', onMouseDown);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
   const rotate = dragX / 12;
   const likeOpacity = Math.min(1, Math.max(0, dragX / SWIPE_THRESHOLD));
   const nopeOpacity = Math.min(1, Math.max(0, -dragX / SWIPE_THRESHOLD));
-  const dragging = startX.current !== null;
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        ref={cardRef}
         style={{
           transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-          transition: dragging ? 'none' : 'transform 0.35s ease',
+          transition: dragX === 0 ? 'transform 0.35s ease' : 'none',
           cursor: voted ? 'default' : 'grab',
-          touchAction: 'none',
           userSelect: 'none',
+          touchAction: 'pan-y',
         }}
         className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900"
       >
@@ -71,7 +108,6 @@ export default function MovieCard({ movie, onVote, voted }) {
         >
           LIKE
         </div>
-
         <div
           className="absolute top-8 right-6 border-4 border-red-400 text-red-400 font-black text-3xl px-3 py-1 rounded-xl rotate-[20deg]"
           style={{ opacity: nopeOpacity }}
