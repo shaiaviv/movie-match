@@ -1,54 +1,54 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
+import { useSwipeable } from 'react-swipeable';
 
 const SWIPE_THRESHOLD = 80;
 
 export default function MovieCard({ movie, onVote, voted }) {
   const [dragX, setDragX] = useState(0);
-  const [flying, setFlying] = useState(false);
-  const startX = useRef(null);
 
-  function onPointerDown(e) {
-    if (voted) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    startX.current = e.clientX;
-  }
+  const handlers = useSwipeable({
+    onSwiping: ({ deltaX }) => {
+      if (!voted) setDragX(deltaX);
+    },
+    onSwipedLeft: ({ deltaX }) => {
+      if (voted) return;
+      if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+        setDragX(-600);
+        setTimeout(() => onVote(false), 300);
+      } else {
+        setDragX(0);
+      }
+    },
+    onSwipedRight: ({ deltaX }) => {
+      if (voted) return;
+      if (Math.abs(deltaX) >= SWIPE_THRESHOLD) {
+        setDragX(600);
+        setTimeout(() => onVote(true), 300);
+      } else {
+        setDragX(0);
+      }
+    },
+    onTouchEndOrOnMouseUp: ({ deltaX }) => {
+      if (Math.abs(deltaX) < SWIPE_THRESHOLD) setDragX(0);
+    },
+    trackMouse: true,
+    preventScrollOnSwipe: true,
+    delta: 10,
+  });
 
-  function onPointerMove(e) {
-    if (startX.current === null) return;
-    setDragX(e.clientX - startX.current);
-  }
-
-  function onPointerUp(e) {
-    if (startX.current === null) return;
-    const x = e.clientX - startX.current;
-    startX.current = null;
-
-    if (Math.abs(x) >= SWIPE_THRESHOLD) {
-      setFlying(true);
-      setDragX(x > 0 ? 600 : -600);
-      setTimeout(() => onVote(x > 0), 300);
-    } else {
-      setDragX(0);
-    }
-  }
-
-  const isDragging = startX.current !== null;
   const rotate = dragX / 12;
   const likeOpacity = Math.min(1, Math.max(0, dragX / SWIPE_THRESHOLD));
   const nopeOpacity = Math.min(1, Math.max(0, -dragX / SWIPE_THRESHOLD));
+  const isDragging = dragX !== 0;
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       <div
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerUp}
+        {...handlers}
         style={{
           transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-          transition: isDragging || flying ? 'none' : 'transform 0.35s ease',
+          transition: isDragging ? 'none' : 'transform 0.35s ease',
           cursor: voted ? 'default' : 'grab',
-          touchAction: 'none',
           userSelect: 'none',
         }}
         className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900"
