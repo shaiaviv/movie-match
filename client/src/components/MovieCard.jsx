@@ -1,96 +1,57 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState } from 'react';
 
 const SWIPE_THRESHOLD = 80;
 
 export default function MovieCard({ movie, onVote, voted }) {
-  const [drag, setDrag] = useState({ x: 0 });
-  const cardRef = useRef(null);
-  const state = useRef({ dragging: false, startX: 0, x: 0 });
+  const [dragX, setDragX] = useState(0);
+  const [flying, setFlying] = useState(false);
+  const startX = useRef(null);
 
-  useEffect(() => {
-    const card = cardRef.current;
-    if (!card) return;
+  function onPointerDown(e) {
+    if (voted) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    startX.current = e.clientX;
+  }
 
-    function finish(x) {
-      state.current.dragging = false;
-      if (Math.abs(x) >= SWIPE_THRESHOLD) {
-        setDrag({ x: x > 0 ? 600 : -600 });
-        setTimeout(() => onVote(x > 0), 300);
-      } else {
-        setDrag({ x: 0 });
-      }
+  function onPointerMove(e) {
+    if (startX.current === null) return;
+    setDragX(e.clientX - startX.current);
+  }
+
+  function onPointerUp(e) {
+    if (startX.current === null) return;
+    const x = e.clientX - startX.current;
+    startX.current = null;
+
+    if (Math.abs(x) >= SWIPE_THRESHOLD) {
+      setFlying(true);
+      setDragX(x > 0 ? 600 : -600);
+      setTimeout(() => onVote(x > 0), 300);
+    } else {
+      setDragX(0);
     }
+  }
 
-    function onTouchStart(e) {
-      if (voted) return;
-      state.current.dragging = true;
-      state.current.startX = e.touches[0].clientX;
-      state.current.x = 0;
-    }
-
-    function onTouchMove(e) {
-      if (!state.current.dragging) return;
-      e.preventDefault();
-      state.current.x = e.touches[0].clientX - state.current.startX;
-      setDrag({ x: state.current.x });
-    }
-
-    function onTouchEnd() {
-      if (!state.current.dragging) return;
-      finish(state.current.x);
-    }
-
-    function onMouseDown(e) {
-      if (voted) return;
-      state.current.dragging = true;
-      state.current.startX = e.clientX;
-      state.current.x = 0;
-    }
-
-    function onMouseMove(e) {
-      if (!state.current.dragging) return;
-      state.current.x = e.clientX - state.current.startX;
-      setDrag({ x: state.current.x });
-    }
-
-    function onMouseUp() {
-      if (!state.current.dragging) return;
-      finish(state.current.x);
-    }
-
-    card.addEventListener('touchstart', onTouchStart, { passive: true });
-    card.addEventListener('touchmove', onTouchMove, { passive: false });
-    card.addEventListener('touchend', onTouchEnd);
-    card.addEventListener('mousedown', onMouseDown);
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-
-    return () => {
-      card.removeEventListener('touchstart', onTouchStart);
-      card.removeEventListener('touchmove', onTouchMove);
-      card.removeEventListener('touchend', onTouchEnd);
-      card.removeEventListener('mousedown', onMouseDown);
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-    };
-  }, [voted, onVote]);
-
-  const rotate = drag.x / 12;
-  const likeOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_THRESHOLD));
-  const nopeOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
+  const isDragging = startX.current !== null;
+  const rotate = dragX / 12;
+  const likeOpacity = Math.min(1, Math.max(0, dragX / SWIPE_THRESHOLD));
+  const nopeOpacity = Math.min(1, Math.max(0, -dragX / SWIPE_THRESHOLD));
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
       <div
-        ref={cardRef}
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerUp}
         style={{
-          transform: `translateX(${drag.x}px) rotate(${rotate}deg)`,
-          transition: state.current.dragging ? 'none' : 'transform 0.35s ease',
+          transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
+          transition: isDragging || flying ? 'none' : 'transform 0.35s ease',
           cursor: voted ? 'default' : 'grab',
+          touchAction: 'none',
           userSelect: 'none',
-          touchAction: 'pan-y',
         }}
-        className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900 select-none"
+        className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900"
       >
         {movie.poster ? (
           <img
