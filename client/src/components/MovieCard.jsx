@@ -1,50 +1,76 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 
 const SWIPE_THRESHOLD = 80;
 
 export default function MovieCard({ movie, onVote, voted }) {
-  const [drag, setDrag] = useState({ x: 0, active: false });
-  const startX = useRef(null);
+  const [drag, setDrag] = useState({ x: 0, flying: false });
+  const dragging = useRef(false);
+  const startX = useRef(0);
+  const currentX = useRef(0);
 
-  function getClientX(e) {
-    return e.touches ? e.touches[0].clientX : e.clientX;
-  }
+  // Attach document-level listeners so fast drags don't escape the card
+  useEffect(() => {
+    function onMouseMove(e) {
+      if (!dragging.current) return;
+      currentX.current = e.clientX - startX.current;
+      setDrag({ x: currentX.current, flying: false });
+    }
+    function onMouseUp() {
+      if (!dragging.current) return;
+      dragging.current = false;
+      finish(currentX.current);
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+  }, []);
 
-  function onStart(e) {
-    if (voted) return;
-    startX.current = getClientX(e);
-    setDrag({ x: 0, active: true });
-  }
-
-  function onMove(e) {
-    if (startX.current === null) return;
-    const x = getClientX(e) - startX.current;
-    setDrag({ x, active: true });
-  }
-
-  function onEnd() {
-    if (startX.current === null) return;
-    const x = drag.x;
-    startX.current = null;
-
+  function finish(x) {
     if (Math.abs(x) >= SWIPE_THRESHOLD) {
-      // fly off screen then vote
-      setDrag({ x: x > 0 ? 500 : -500, active: false });
+      setDrag({ x: x > 0 ? 600 : -600, flying: true });
       setTimeout(() => onVote(x > 0), 300);
     } else {
-      setDrag({ x: 0, active: false });
+      setDrag({ x: 0, flying: false });
     }
   }
 
+  function onMouseDown(e) {
+    if (voted) return;
+    dragging.current = true;
+    startX.current = e.clientX;
+    currentX.current = 0;
+  }
+
+  function onTouchStart(e) {
+    if (voted) return;
+    dragging.current = true;
+    startX.current = e.touches[0].clientX;
+    currentX.current = 0;
+  }
+
+  function onTouchMove(e) {
+    if (!dragging.current) return;
+    e.preventDefault();
+    currentX.current = e.touches[0].clientX - startX.current;
+    setDrag({ x: currentX.current, flying: false });
+  }
+
+  function onTouchEnd() {
+    if (!dragging.current) return;
+    dragging.current = false;
+    finish(currentX.current);
+  }
+
   const rotate = drag.x / 12;
-  const opacity = Math.max(0, 1 - Math.abs(drag.x) / 400);
   const likeOpacity = Math.min(1, Math.max(0, drag.x / SWIPE_THRESHOLD));
   const nopeOpacity = Math.min(1, Math.max(0, -drag.x / SWIPE_THRESHOLD));
 
   const cardStyle = {
     transform: `translateX(${drag.x}px) rotate(${rotate}deg)`,
-    transition: drag.active ? 'none' : 'transform 0.35s ease, opacity 0.35s ease',
-    opacity,
+    transition: dragging.current ? 'none' : 'transform 0.35s ease',
     cursor: voted ? 'default' : 'grab',
     userSelect: 'none',
     touchAction: 'none',
@@ -52,16 +78,12 @@ export default function MovieCard({ movie, onVote, voted }) {
 
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
-      {/* Swipeable card */}
       <div
         style={cardStyle}
-        onMouseDown={onStart}
-        onMouseMove={drag.active ? onMove : undefined}
-        onMouseUp={onEnd}
-        onMouseLeave={onEnd}
-        onTouchStart={onStart}
-        onTouchMove={onMove}
-        onTouchEnd={onEnd}
+        onMouseDown={onMouseDown}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
         className="relative w-full rounded-3xl overflow-hidden shadow-2xl bg-gray-900 select-none"
       >
         {movie.poster ? (
@@ -106,7 +128,7 @@ export default function MovieCard({ movie, onVote, voted }) {
         </div>
       </div>
 
-      {/* Buttons (still available as fallback) */}
+      {/* Buttons */}
       <div className="flex gap-6 mt-6">
         <button
           onClick={() => onVote(false)}
