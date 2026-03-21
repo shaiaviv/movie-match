@@ -71,15 +71,13 @@ export default function Room() {
     socket.emit('vote', { roomId, movieId: movie.id, liked });
     setVoted(true);
 
-    setTimeout(() => {
-      const next = index + 1;
-      if (next >= movies.length) {
-        setDone(true);
-      } else {
-        setIndex(next);
-        setVoted(false);
-      }
-    }, 300);
+    const next = index + 1;
+    if (next >= movies.length) {
+      setDone(true);
+    } else {
+      setIndex(next);
+      setVoted(false);
+    }
   }, [voted, done, movies, index, roomId]);
 
   function copyCode() {
@@ -158,6 +156,7 @@ export default function Room() {
               {index + 1} / {movies.length}
             </div>
             <MovieCard
+              key={index}
               movie={currentMovie}
               onVote={handleVote}
               voted={voted}
