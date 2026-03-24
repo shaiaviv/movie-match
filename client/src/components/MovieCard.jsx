@@ -105,8 +105,8 @@ export default function MovieCard({ movie, onVote, voted, nextMovies = [] }) {
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
 
-      {/* ── Card stack (paddingTop creates the 2:3 aspect box) ── */}
-      <div className="relative w-full" style={{ paddingTop: '150%' }}>
+      {/* ── Card stack — height capped so it always fits in the viewport ── */}
+      <div className="relative w-full" style={{ height: 'min(calc((100vw - 2rem) * 1.5), calc(100dvh - 260px))' }}>
 
         {/* Ghost card 2 — back */}
         {next2 && (

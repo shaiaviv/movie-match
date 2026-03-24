@@ -111,7 +111,7 @@ export default function Room() {
   const progress = Math.round((index / movies.length) * 100);
 
   return (
-    <div className="min-h-screen flex flex-col bg-noir-950">
+    <div className="h-[100dvh] flex flex-col bg-noir-950 overflow-hidden">
       {/* ── Header ── */}
       <header
         className="flex items-center justify-between px-5 py-3.5 sticky top-0 z-10 border-b border-cream-200/8"
@@ -165,7 +165,7 @@ export default function Room() {
       </div>
 
       {/* ── Main ── */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 relative">
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-3 relative min-h-0">
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(232,192,90,0.045) 0%, transparent 70%)' }}

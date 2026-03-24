@@ -31,7 +31,7 @@ body::after {
   opacity: 0.038;
   pointer-events: none;
   z-index: 9999;
-  animation: grain 0.65s steps(1) infinite;
+  animation: grain 0.65s steps(10) infinite;
 }
 
 @keyframes grain {
