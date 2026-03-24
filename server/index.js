@@ -37,6 +37,10 @@ io.on('connection', (socket) => {
     }
     try {
       const movies = await fetchMovies(TMDB_API_KEY, genreId || null, { yearFrom, yearTo, minRating, runtimeMin, runtimeMax, language, certification });
+      if (movies.length === 0) {
+        socket.emit('error', 'No movies found for those filters. Try adjusting your settings.');
+        return;
+      }
       const roomId = createRoom(socket.id, movies);
       socket.join(roomId);
       socket.emit('room-created', { roomId, movies });

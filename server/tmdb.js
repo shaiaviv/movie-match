@@ -48,6 +48,6 @@ export async function fetchMovies(apiKey, genreId = null, { yearFrom, yearTo, mi
     pages.map(p => fetch(`${base}&page=${p}`).then(r => r.json()))
   );
 
-  const combined = results.flatMap(r => r.results || []);
+  const combined = results.flatMap(r => Array.isArray(r.results) ? r.results : []);
   return shuffle(formatMovies(combined)).slice(0, 20);
 }
