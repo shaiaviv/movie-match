@@ -28,13 +28,6 @@ export default function Home() {
   const [yearTo, setYearTo] = useState('');
   const [minRating, setMinRating] = useState(0);
 
-  const RATING_OPTIONS = [
-    { label: 'Any', value: 0 },
-    { label: '6+', value: 6 },
-    { label: '7+', value: 7 },
-    { label: '8+', value: 8 },
-  ];
-
   useEffect(() => {
     socket.connect();
 
@@ -89,6 +82,10 @@ export default function Home() {
         className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 80% 55% at 50% 35%, #1c1030 0%, #0c0a0f 65%)' }}
       />
+      {/* Floating gradient orbs */}
+      <div className="absolute pointer-events-none" style={{ width: 420, height: 420, top: '-8%', left: '-18%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,155,35,0.13) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'floatOrb 14s ease-in-out infinite' }} />
+      <div className="absolute pointer-events-none" style={{ width: 360, height: 360, bottom: '4%', right: '-14%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(115,65,175,0.11) 0%, transparent 70%)', filter: 'blur(35px)', animation: 'floatOrb 19s ease-in-out infinite reverse' }} />
+      <div className="absolute pointer-events-none" style={{ width: 220, height: 220, top: '38%', right: '8%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(175,50,50,0.08) 0%, transparent 70%)', filter: 'blur(28px)', animation: 'floatOrb 11s ease-in-out infinite', animationDelay: '-4s' }} />
       {/* Ornamental edge lines */}
       <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,192,90,0.25), transparent)' }} />
       <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,192,90,0.12), transparent)' }} />
@@ -193,23 +190,34 @@ export default function Home() {
               </div>
             </div>
 
-            {/* ── Min rating ── */}
+            {/* ── Min rating slider ── */}
             <div className="mb-5">
-              <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase mb-2">Min rating ★</p>
-              <div className="flex gap-1.5">
-                {RATING_OPTIONS.map(opt => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setMinRating(opt.value)}
-                    className={`flex-1 py-2 rounded text-xs font-sans font-medium tracking-wide border transition-all duration-150 ${
-                      minRating === opt.value
-                        ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
-                        : 'border-cream-200/8 bg-noir-800 text-cream-500 hover:border-cream-200/20 hover:text-cream-300'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <style>{`
+                .rating-slider { -webkit-appearance: none; appearance: none; height: 3px; border-radius: 9999px; outline: none; cursor: pointer; }
+                .rating-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #e8c05a; box-shadow: 0 0 8px rgba(232,192,90,0.45); cursor: pointer; }
+                .rating-slider::-moz-range-thumb { width: 18px; height: 18px; border: none; border-radius: 50%; background: #e8c05a; box-shadow: 0 0 8px rgba(232,192,90,0.45); cursor: pointer; }
+              `}</style>
+              <div className="flex justify-between items-center mb-2">
+                <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase">Min rating ★</p>
+                <span className="font-mono text-gold-400 text-sm font-semibold">
+                  {minRating === 0 ? 'Any' : `${minRating}+`}
+                </span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="8"
+                step="0.5"
+                value={minRating}
+                onChange={e => setMinRating(parseFloat(e.target.value))}
+                className="rating-slider w-full"
+                style={{
+                  background: `linear-gradient(to right, #e8c05a ${minRating / 8 * 100}%, rgba(255,255,255,0.08) ${minRating / 8 * 100}%)`
+                }}
+              />
+              <div className="flex justify-between mt-1">
+                <span className="font-sans text-cream-600 text-[10px]">0</span>
+                <span className="font-sans text-cream-600 text-[10px]">8+</span>
               </div>
             </div>
 
