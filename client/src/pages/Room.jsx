@@ -28,15 +28,23 @@ export default function Room() {
 
   useEffect(() => {
     const storedRoomId = sessionStorage.getItem('roomId');
-
-    if (!storedRoomId || storedRoomId !== roomId || movies.length === 0) {
-      navigate('/', { replace: true });
-      return;
-    }
-
-    setCode(roomId);
+    const hasSession = storedRoomId === roomId && movies.length > 0;
 
     if (!socket.connected) socket.connect();
+
+    // Direct URL join — no existing session for this room
+    if (!hasSession) {
+      socket.emit('join-room', roomId);
+    } else {
+      setCode(roomId);
+    }
+
+    socket.on('room-joined', ({ roomId: joinedId, movies: m }) => {
+      sessionStorage.setItem('movies', JSON.stringify(m));
+      sessionStorage.setItem('roomId', joinedId);
+      setMovies(m);
+      setCode(joinedId);
+    });
 
     socket.on('partner-joined', () => {
       setPartnerJoined(true);
@@ -51,17 +59,19 @@ export default function Room() {
       setPartnerLeft(true);
     });
 
-    socket.on('error', (msg) => {
-      console.error('Socket error:', msg);
+    socket.on('error', () => {
+      // Join failed (room full / not found) — go home
+      if (!hasSession) navigate('/', { replace: true });
     });
 
     return () => {
+      socket.off('room-joined');
       socket.off('partner-joined');
       socket.off('match');
       socket.off('partner-disconnected');
       socket.off('error');
     };
-  }, [roomId, navigate, movies.length]);
+  }, [roomId, navigate]); // movies.length intentionally omitted — effect runs once per roomId
 
   const handleVote = useCallback((liked) => {
     if (voted || done) return;
@@ -78,14 +88,22 @@ export default function Room() {
     }
   }, [voted, done, movies, index, roomId]);
 
-  function copyCode() {
-    navigator.clipboard.writeText(code).then(() => {
+  function copyLink() {
+    const url = `${window.location.origin}/room/${code}`;
+    navigator.clipboard.writeText(url).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
   }
 
-  if (movies.length === 0) return null;
+  // Joining via direct URL — show loading until movies arrive
+  if (movies.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-noir-950">
+        <p className="font-sans text-cream-500 text-sm tracking-[0.2em]">Joining room…</p>
+      </div>
+    );
+  }
 
   const currentMovie = movies[index];
   const progress = Math.round((index / movies.length) * 100);
@@ -102,11 +120,11 @@ export default function Room() {
         </span>
 
         <button
-          onClick={copyCode}
+          onClick={copyLink}
           className="flex items-center gap-2 bg-noir-800 hover:bg-noir-700 active:scale-[0.97] transition-all px-3.5 py-2 rounded border border-cream-200/10 font-mono text-sm tracking-[0.2em] text-cream-300 uppercase"
         >
           {code}
-          <span className="text-cream-600 text-[10px] ml-0.5">{copied ? '✓' : '⎘'}</span>
+          <span className="text-cream-600 text-[10px] ml-0.5">{copied ? '✓ copied' : '⎘'}</span>
         </button>
       </header>
 
@@ -116,8 +134,7 @@ export default function Room() {
           className="px-5 py-2.5 text-xs font-sans tracking-wider text-center border-b"
           style={{ background: 'rgba(180,140,40,0.07)', borderColor: 'rgba(180,140,40,0.18)', color: '#c9a840' }}
         >
-          Waiting for partner — share code{' '}
-          <strong className="font-mono tracking-widest">{code}</strong>
+          Waiting for partner — tap the code above to copy the link
         </div>
       )}
       {partnerLeft && (
@@ -147,7 +164,6 @@ export default function Room() {
 
       {/* ── Main ── */}
       <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 relative">
-        {/* Subtle spotlight glow behind card */}
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle, rgba(232,192,90,0.045) 0%, transparent 70%)' }}
@@ -176,7 +192,6 @@ export default function Room() {
               movie={currentMovie}
               onVote={handleVote}
               voted={voted}
-              nextMovies={movies.slice(index + 1, index + 3)}
             />
           </div>
         )}

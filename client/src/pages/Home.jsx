@@ -17,16 +17,80 @@ const GENRES = [
   { id: 80,    label: 'Crime',      emoji: '🔪' },
 ];
 
+const DECADES = [
+  { label: 'Any',  from: null, to: null },
+  { label: '80s',  from: 1980, to: 1989 },
+  { label: '90s',  from: 1990, to: 1999 },
+  { label: '00s',  from: 2000, to: 2009 },
+  { label: '10s',  from: 2010, to: 2019 },
+  { label: '20s',  from: 2020, to: null },
+];
+
+const RUNTIMES = [
+  { label: 'Any',    min: null, max: null  },
+  { label: '< 90m', min: null, max: 89    },
+  { label: '90–130m',min: 90,  max: 130   },
+  { label: '130m +', min: 131, max: null  },
+];
+
+const AGE_RATINGS = ['Any', 'G', 'PG', 'PG-13', 'R'];
+
+const LANGUAGES = [
+  { label: 'Any', code: null },
+  { label: 'EN',  code: 'en' },
+  { label: 'ES',  code: 'es' },
+  { label: 'FR',  code: 'fr' },
+  { label: 'KO',  code: 'ko' },
+  { label: 'JA',  code: 'ja' },
+];
+
+function Pills({ options, selected, onSelect, getKey, getLabel }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {options.map(opt => {
+        const key   = getKey   ? getKey(opt)   : opt;
+        const label = getLabel ? getLabel(opt) : opt;
+        return (
+          <button
+            key={key}
+            onClick={() => onSelect(opt)}
+            className={`px-3 py-1.5 rounded text-xs font-sans font-medium tracking-wide border transition-all duration-150 ${
+              selected === opt
+                ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
+                : 'border-cream-200/8 bg-noir-800 text-cream-500 hover:border-cream-200/20 hover:text-cream-300'
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function FilterSection({ label, children }) {
+  return (
+    <div className="mb-4">
+      <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase mb-2">{label}</p>
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [mode, setMode] = useState(null);
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
-  const [yearFrom, setYearFrom] = useState('');
-  const [yearTo, setYearTo] = useState('');
-  const [minRating, setMinRating] = useState(0);
+
+  // Filters
+  const [selectedGenre,   setSelectedGenre]   = useState(GENRES[0]);
+  const [selectedDecade,  setSelectedDecade]  = useState(DECADES[0]);
+  const [selectedRuntime, setSelectedRuntime] = useState(RUNTIMES[0]);
+  const [ageRating,       setAgeRating]       = useState('Any');
+  const [language,        setLanguage]        = useState(LANGUAGES[0]);
+  const [minRating,       setMinRating]       = useState(0);
 
   useEffect(() => {
     socket.connect();
@@ -58,21 +122,32 @@ export default function Home() {
   function handleCreate() {
     setError('');
     setLoading(true);
-    const currentYear = new Date().getFullYear();
     socket.emit('create-room', {
-      genreId: selectedGenre.id,
-      yearFrom: yearFrom ? parseInt(yearFrom) : undefined,
-      yearTo: yearTo ? Math.min(parseInt(yearTo), currentYear) : undefined,
-      minRating: minRating || undefined,
+      genreId:       selectedGenre.id,
+      yearFrom:      selectedDecade.from  || undefined,
+      yearTo:        selectedDecade.to    || undefined,
+      minRating:     minRating            || undefined,
+      runtimeMin:    selectedRuntime.min  || undefined,
+      runtimeMax:    selectedRuntime.max  || undefined,
+      language:      language.code        || undefined,
+      certification: ageRating !== 'Any'  ? ageRating : undefined,
     });
   }
 
   function handleJoin(e) {
     e.preventDefault();
-    if (!code.trim()) return;
+    let joinCode = code.trim();
+    // Accept a full room URL — extract the code from the path
+    try {
+      const url = new URL(joinCode);
+      const parts = url.pathname.split('/').filter(Boolean);
+      joinCode = parts[parts.length - 1];
+    } catch {}
+    joinCode = joinCode.toUpperCase();
+    if (!joinCode) return;
     setError('');
     setLoading(true);
-    socket.emit('join-room', code.trim());
+    socket.emit('join-room', joinCode);
   }
 
   return (
@@ -147,58 +222,73 @@ export default function Home() {
           </div>
         )}
 
-        {/* ── Genre picker (create flow) ── */}
+        {/* ── Genre + filter picker (create flow) ── */}
         {mode === 'create' && (
           <div className="w-full animate-fade-up" style={{ animationDelay: '0ms' }}>
-            <div className="text-center mb-5">
-              <p className="font-sans text-cream-400 text-[11px] tracking-[0.35em] uppercase">Choose a genre</p>
-              <p className="font-sans text-cream-600 text-xs mt-1">Your partner will see the same films</p>
-            </div>
 
-            <div className="grid grid-cols-3 gap-1.5 mb-5">
-              {GENRES.map(g => (
-                <button
-                  key={g.label}
-                  onClick={() => setSelectedGenre(g)}
-                  className={`flex flex-col items-center gap-1 py-3 px-2 rounded transition-all duration-150 border text-xs font-sans font-medium tracking-wide ${
-                    selectedGenre.label === g.label
-                      ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
-                      : 'border-cream-200/8 bg-noir-800 text-cream-500 hover:border-cream-200/20 hover:text-cream-300'
-                  }`}
-                >
-                  <span className="text-lg leading-none">{g.emoji}</span>
-                  {g.label}
-                </button>
-              ))}
-            </div>
-
-            {/* ── Year range ── */}
-            <div className="mb-4">
-              <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase mb-2">Release year</p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  placeholder="From"
-                  value={yearFrom}
-                  onChange={e => setYearFrom(e.target.value)}
-                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
-                />
-                <span className="text-cream-600 text-xs">–</span>
-                <input
-                  type="number"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  placeholder="To"
-                  value={yearTo}
-                  onChange={e => setYearTo(e.target.value)}
-                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
-                />
+            {/* Genre */}
+            <FilterSection label="Choose a genre">
+              <div className="grid grid-cols-3 gap-1.5">
+                {GENRES.map(g => (
+                  <button
+                    key={g.label}
+                    onClick={() => setSelectedGenre(g)}
+                    className={`flex flex-col items-center gap-1 py-3 px-2 rounded transition-all duration-150 border text-xs font-sans font-medium tracking-wide ${
+                      selectedGenre.label === g.label
+                        ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
+                        : 'border-cream-200/8 bg-noir-800 text-cream-500 hover:border-cream-200/20 hover:text-cream-300'
+                    }`}
+                  >
+                    <span className="text-lg leading-none">{g.emoji}</span>
+                    {g.label}
+                  </button>
+                ))}
               </div>
-            </div>
+            </FilterSection>
 
-            {/* ── Min rating slider ── */}
+            {/* Decade */}
+            <FilterSection label="Decade">
+              <Pills
+                options={DECADES}
+                selected={selectedDecade}
+                onSelect={setSelectedDecade}
+                getKey={d => d.label}
+                getLabel={d => d.label}
+              />
+            </FilterSection>
+
+            {/* Runtime */}
+            <FilterSection label="Runtime">
+              <Pills
+                options={RUNTIMES}
+                selected={selectedRuntime}
+                onSelect={setSelectedRuntime}
+                getKey={r => r.label}
+                getLabel={r => r.label}
+              />
+            </FilterSection>
+
+            {/* Age rating */}
+            <FilterSection label="Age rating">
+              <Pills
+                options={AGE_RATINGS}
+                selected={ageRating}
+                onSelect={setAgeRating}
+              />
+            </FilterSection>
+
+            {/* Language */}
+            <FilterSection label="Language">
+              <Pills
+                options={LANGUAGES}
+                selected={language}
+                onSelect={setLanguage}
+                getKey={l => l.label}
+                getLabel={l => l.label}
+              />
+            </FilterSection>
+
+            {/* Min rating slider */}
             <div className="mb-5">
               <style>{`
                 .rating-slider { -webkit-appearance: none; appearance: none; height: 3px; border-radius: 9999px; outline: none; cursor: pointer; }
@@ -213,15 +303,11 @@ export default function Home() {
               </div>
               <input
                 type="range"
-                min="0"
-                max="8"
-                step="0.5"
+                min="0" max="8" step="0.5"
                 value={minRating}
                 onChange={e => setMinRating(parseFloat(e.target.value))}
                 className="rating-slider w-full"
-                style={{
-                  background: `linear-gradient(to right, #e8c05a ${minRating / 8 * 100}%, rgba(255,255,255,0.08) ${minRating / 8 * 100}%)`
-                }}
+                style={{ background: `linear-gradient(to right, #e8c05a ${minRating / 8 * 100}%, rgba(255,255,255,0.08) ${minRating / 8 * 100}%)` }}
               />
               <div className="flex justify-between mt-1">
                 <span className="font-sans text-cream-600 text-[10px]">0</span>
@@ -250,18 +336,21 @@ export default function Home() {
         {mode === 'join' && (
           <form onSubmit={handleJoin} className="w-full animate-fade-up" style={{ animationDelay: '0ms' }}>
             <div className="text-center mb-5">
-              <p className="font-sans text-cream-400 text-[11px] tracking-[0.35em] uppercase">Room Code</p>
-              <p className="font-sans text-cream-600 text-xs mt-1">Enter the code your partner shared</p>
+              <p className="font-sans text-cream-400 text-[11px] tracking-[0.35em] uppercase">Join a Room</p>
+              <p className="font-sans text-cream-600 text-xs mt-1">Paste a room link or enter the 6-letter code</p>
             </div>
 
             <input
               type="text"
-              maxLength={6}
               value={code}
-              onChange={e => setCode(e.target.value.toUpperCase())}
-              placeholder="XXXXXX"
+              onChange={e => {
+                const val = e.target.value;
+                // Don't force uppercase if it looks like a URL
+                setCode(val.includes('/') ? val : val.toUpperCase());
+              }}
+              placeholder="XXXXXX or paste link"
               autoFocus
-              className="w-full text-center uppercase text-2xl font-mono tracking-[0.5em] text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-4 px-4 placeholder:text-cream-600/40 transition-colors"
+              className="w-full text-center text-base font-mono tracking-widest text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-4 px-4 placeholder:text-cream-600/40 transition-colors"
             />
 
             <button

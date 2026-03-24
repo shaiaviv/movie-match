@@ -29,16 +29,20 @@ function formatMovies(results) {
     }));
 }
 
-export async function fetchMovies(apiKey, genreId = null, { yearFrom, yearTo, minRating } = {}) {
+export async function fetchMovies(apiKey, genreId = null, { yearFrom, yearTo, minRating, runtimeMin, runtimeMax, language, certification } = {}) {
   const pages = randomPages(3);
   const voteMin = genreId ? 100 : 200;
   let base = genreId
     ? `${BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=${voteMin}`
     : `${BASE_URL}/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=${voteMin}`;
 
-  if (yearFrom) base += `&primary_release_date.gte=${yearFrom}-01-01`;
-  if (yearTo)   base += `&primary_release_date.lte=${yearTo}-12-31`;
-  if (minRating) base += `&vote_average.gte=${minRating}`;
+  if (yearFrom)     base += `&primary_release_date.gte=${yearFrom}-01-01`;
+  if (yearTo)       base += `&primary_release_date.lte=${yearTo}-12-31`;
+  if (minRating)    base += `&vote_average.gte=${minRating}`;
+  if (runtimeMin)   base += `&with_runtime.gte=${runtimeMin}`;
+  if (runtimeMax)   base += `&with_runtime.lte=${runtimeMax}`;
+  if (language)     base += `&with_original_language=${language}`;
+  if (certification) base += `&certification_country=US&certification.lte=${encodeURIComponent(certification)}`;
 
   const results = await Promise.all(
     pages.map(p => fetch(`${base}&page=${p}`).then(r => r.json()))
