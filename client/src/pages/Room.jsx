@@ -33,8 +33,10 @@ export default function Room() {
     if (!socket.connected) socket.connect();
 
     // Direct URL join — no existing session for this room
+    let didEmitJoin = false;
     if (!hasSession) {
       socket.emit('join-room', roomId);
+      didEmitJoin = true;
     } else {
       setCode(roomId);
     }
@@ -60,8 +62,8 @@ export default function Room() {
     });
 
     socket.on('error', () => {
-      // Join failed (room full / not found) — go home
-      if (!hasSession) navigate('/', { replace: true });
+      // Only redirect home if we explicitly tried to join (not the room creator)
+      if (didEmitJoin) navigate('/', { replace: true });
     });
 
     return () => {
