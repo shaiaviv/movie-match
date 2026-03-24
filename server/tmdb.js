@@ -29,11 +29,16 @@ function formatMovies(results) {
     }));
 }
 
-export async function fetchMovies(apiKey, genreId = null) {
+export async function fetchMovies(apiKey, genreId = null, { yearFrom, yearTo, minRating } = {}) {
   const pages = randomPages(3);
-  const base = genreId
-    ? `${BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=100`
-    : `${BASE_URL}/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=200`;
+  const voteMin = genreId ? 100 : 200;
+  let base = genreId
+    ? `${BASE_URL}/discover/movie?api_key=${apiKey}&with_genres=${genreId}&sort_by=popularity.desc&vote_count.gte=${voteMin}`
+    : `${BASE_URL}/discover/movie?api_key=${apiKey}&sort_by=popularity.desc&vote_count.gte=${voteMin}`;
+
+  if (yearFrom) base += `&primary_release_date.gte=${yearFrom}-01-01`;
+  if (yearTo)   base += `&primary_release_date.lte=${yearTo}-12-31`;
+  if (minRating) base += `&vote_average.gte=${minRating}`;
 
   const results = await Promise.all(
     pages.map(p => fetch(`${base}&page=${p}`).then(r => r.json()))

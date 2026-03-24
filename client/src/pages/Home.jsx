@@ -24,6 +24,16 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [selectedGenre, setSelectedGenre] = useState(GENRES[0]);
+  const [yearFrom, setYearFrom] = useState('');
+  const [yearTo, setYearTo] = useState('');
+  const [minRating, setMinRating] = useState(0);
+
+  const RATING_OPTIONS = [
+    { label: 'Any', value: 0 },
+    { label: '6+', value: 6 },
+    { label: '7+', value: 7 },
+    { label: '8+', value: 8 },
+  ];
 
   useEffect(() => {
     socket.connect();
@@ -55,7 +65,13 @@ export default function Home() {
   function handleCreate() {
     setError('');
     setLoading(true);
-    socket.emit('create-room', { genreId: selectedGenre.id });
+    const currentYear = new Date().getFullYear();
+    socket.emit('create-room', {
+      genreId: selectedGenre.id,
+      yearFrom: yearFrom ? parseInt(yearFrom) : undefined,
+      yearTo: yearTo ? Math.min(parseInt(yearTo), currentYear) : undefined,
+      minRating: minRating || undefined,
+    });
   }
 
   function handleJoin(e) {
@@ -149,6 +165,52 @@ export default function Home() {
                   {g.label}
                 </button>
               ))}
+            </div>
+
+            {/* ── Year range ── */}
+            <div className="mb-4">
+              <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase mb-2">Release year</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="From"
+                  value={yearFrom}
+                  onChange={e => setYearFrom(e.target.value)}
+                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
+                />
+                <span className="text-cream-600 text-xs">–</span>
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="To"
+                  value={yearTo}
+                  onChange={e => setYearTo(e.target.value)}
+                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
+                />
+              </div>
+            </div>
+
+            {/* ── Min rating ── */}
+            <div className="mb-5">
+              <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase mb-2">Min rating ★</p>
+              <div className="flex gap-1.5">
+                {RATING_OPTIONS.map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setMinRating(opt.value)}
+                    className={`flex-1 py-2 rounded text-xs font-sans font-medium tracking-wide border transition-all duration-150 ${
+                      minRating === opt.value
+                        ? 'border-gold-400/50 bg-gold-400/10 text-gold-300'
+                        : 'border-cream-200/8 bg-noir-800 text-cream-500 hover:border-cream-200/20 hover:text-cream-300'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <button
