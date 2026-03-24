@@ -29,7 +29,6 @@ export default function Room() {
   useEffect(() => {
     const storedRoomId = sessionStorage.getItem('roomId');
 
-    // If someone navigated here directly without a valid session, go home
     if (!storedRoomId || storedRoomId !== roomId || movies.length === 0) {
       navigate('/', { replace: true });
       return;
@@ -37,7 +36,6 @@ export default function Room() {
 
     setCode(roomId);
 
-    // Reconnect socket if needed
     if (!socket.connected) socket.connect();
 
     socket.on('partner-joined', () => {
@@ -93,67 +91,85 @@ export default function Room() {
   const progress = Math.round((index / movies.length) * 100);
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10 border-b border-gray-800">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🎬</span>
-          <span className="font-bold text-lg">MovieMatch</span>
-        </div>
+    <div className="min-h-screen flex flex-col bg-noir-950">
+      {/* ── Header ── */}
+      <header
+        className="flex items-center justify-between px-5 py-3.5 sticky top-0 z-10 border-b border-cream-200/8"
+        style={{ background: 'rgba(12,10,15,0.88)', backdropFilter: 'blur(14px)' }}
+      >
+        <span className="font-display text-xl italic font-light text-cream-200 tracking-tight select-none">
+          Movie <span className="not-italic font-semibold text-gold-400">Match</span>
+        </span>
 
         <button
           onClick={copyCode}
-          className="flex items-center gap-1.5 bg-gray-800 hover:bg-gray-700 active:scale-95 transition-all px-3 py-1.5 rounded-xl text-sm font-mono font-bold tracking-wider"
-          title="Copy room code"
+          className="flex items-center gap-2 bg-noir-800 hover:bg-noir-700 active:scale-[0.97] transition-all px-3.5 py-2 rounded border border-cream-200/10 font-mono text-sm tracking-[0.2em] text-cream-300 uppercase"
         >
           {code}
-          <span className="text-xs text-gray-400">{copied ? '✓' : '⎘'}</span>
+          <span className="text-cream-600 text-[10px] ml-0.5">{copied ? '✓' : '⎘'}</span>
         </button>
       </header>
 
-      {/* Partner status banner */}
+      {/* ── Partner status ── */}
       {!partnerJoined && !partnerLeft && (
-        <div className="bg-yellow-900/40 border-b border-yellow-700/30 text-yellow-300 text-sm text-center py-2 px-4">
-          Waiting for your partner to join… Share the code: <strong>{code}</strong>
+        <div
+          className="px-5 py-2.5 text-xs font-sans tracking-wider text-center border-b"
+          style={{ background: 'rgba(180,140,40,0.07)', borderColor: 'rgba(180,140,40,0.18)', color: '#c9a840' }}
+        >
+          Waiting for partner — share code{' '}
+          <strong className="font-mono tracking-widest">{code}</strong>
         </div>
       )}
       {partnerLeft && (
-        <div className="bg-red-900/40 border-b border-red-700/30 text-red-300 text-sm text-center py-2">
+        <div
+          className="px-5 py-2.5 text-xs font-sans tracking-wider text-center border-b"
+          style={{ background: 'rgba(180,60,60,0.07)', borderColor: 'rgba(180,60,60,0.18)', color: '#d06060' }}
+        >
           Your partner disconnected.
         </div>
       )}
       {partnerJoined && !partnerLeft && (
-        <div className="bg-green-900/30 border-b border-green-700/20 text-green-300 text-sm text-center py-2">
-          Partner connected! Start swiping.
+        <div
+          className="px-5 py-2.5 text-xs font-sans tracking-wider text-center border-b"
+          style={{ background: 'rgba(50,130,80,0.07)', borderColor: 'rgba(50,130,80,0.18)', color: '#58b880' }}
+        >
+          Partner connected — start swiping
         </div>
       )}
 
-      {/* Progress bar */}
-      <div className="h-1 bg-gray-800">
+      {/* ── Progress bar ── */}
+      <div className="h-[2px] bg-noir-800">
         <div
-          className="h-full bg-rose-500 transition-all duration-300"
-          style={{ width: `${progress}%` }}
+          className="h-full transition-all duration-500"
+          style={{ width: `${progress}%`, background: 'linear-gradient(90deg, #d4a83e, #f2d875)' }}
         />
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6">
+      {/* ── Main ── */}
+      <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 relative">
+        {/* Subtle spotlight glow behind card */}
+        <div
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(232,192,90,0.045) 0%, transparent 70%)' }}
+        />
+
         {done ? (
-          <div className="text-center">
-            <div className="text-5xl mb-4">🍿</div>
-            <h2 className="text-2xl font-bold">All done!</h2>
-            <p className="text-gray-400 mt-2">You've swiped through all the movies.</p>
+          <div className="text-center relative z-10">
+            <div className="text-5xl mb-5">🍿</div>
+            <h2 className="font-display italic font-light text-3xl text-cream-200">All done!</h2>
+            <p className="font-sans text-cream-500 text-sm mt-2 tracking-wide">You've seen all the films.</p>
             <button
               onClick={() => { sessionStorage.clear(); navigate('/'); }}
-              className="mt-6 bg-rose-600 hover:bg-rose-500 active:scale-95 transition-all text-white font-semibold py-3 px-8 rounded-2xl"
+              className="mt-8 font-sans font-medium text-sm tracking-[0.2em] uppercase text-noir-950 bg-gold-400 hover:bg-gold-300 active:scale-[0.98] transition-all px-10 py-3.5 rounded"
+              style={{ boxShadow: '0 4px 24px rgba(232,192,90,0.22)' }}
             >
-              Start over
+              Start Over
             </button>
           </div>
         ) : (
-          <>
-            <div className="text-xs text-gray-500 mb-3">
-              {index + 1} / {movies.length}
+          <div className="w-full relative z-10">
+            <div className="text-center font-sans text-[10px] text-cream-600 tracking-[0.3em] uppercase mb-3">
+              {index + 1} of {movies.length}
             </div>
             <MovieCard
               key={index}
@@ -161,7 +177,7 @@ export default function Room() {
               onVote={handleVote}
               voted={voted}
             />
-          </>
+          </div>
         )}
       </main>
 
