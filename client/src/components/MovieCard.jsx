@@ -1,9 +1,9 @@
 import { useRef, useState, useEffect } from 'react';
 
 const SWIPE_THRESHOLD = 80;
-const VELOCITY_THRESHOLD = 0.3; // px/ms — enables flick gestures
+const VELOCITY_THRESHOLD = 0.3; // px/ms
 
-export default function MovieCard({ movie, onVote, voted }) {
+export default function MovieCard({ movie, onVote, voted, nextMovies = [] }) {
   const [dragX, setDragX] = useState(0);
   const [isExiting, setIsExiting] = useState(false);
   const cardRef = useRef(null);
@@ -13,7 +13,6 @@ export default function MovieCard({ movie, onVote, voted }) {
   useEffect(() => { onVoteRef.current = onVote; }, [onVote]);
   useEffect(() => { votedRef.current = voted; }, [voted]);
 
-  // Shared exit logic — used by both swipe gestures and buttons
   function triggerExit(liked) {
     if (votedRef.current) return;
     votedRef.current = true;
@@ -40,8 +39,7 @@ export default function MovieCard({ movie, onVote, voted }) {
         votedRef.current = true;
         setIsExiting(true);
         setDragX(delta > 0 ? 600 : -600);
-        const liked = delta > 0;
-        setTimeout(() => onVoteRef.current(liked), 350);
+        setTimeout(() => onVoteRef.current(delta > 0), 350);
       } else {
         setDragX(0);
       }
@@ -61,7 +59,6 @@ export default function MovieCard({ movie, onVote, voted }) {
       if (startX === null) return;
       finish(e.changedTouches[0].clientX, Date.now() - startTime);
     }
-
     function onMouseDown(e) {
       if (votedRef.current) return;
       startX = e.clientX;
@@ -94,68 +91,133 @@ export default function MovieCard({ movie, onVote, voted }) {
   }, []);
 
   const rotate = dragX / 12;
+  const tiltY = dragX / 18; // subtle 3D Y-axis lean
   const likeOpacity = Math.min(1, Math.max(0, dragX / SWIPE_THRESHOLD));
   const nopeOpacity = Math.min(1, Math.max(0, -dragX / SWIPE_THRESHOLD));
   const transition = (isExiting || dragX === 0) ? 'transform 0.35s ease' : 'none';
 
+  // Stack cards scale up progressively as you drag
+  const stackProgress = Math.min(1, Math.abs(dragX) / SWIPE_THRESHOLD);
+  const stackTransition = (dragX === 0 || isExiting) ? 'transform 0.35s ease, opacity 0.35s ease' : 'none';
+
+  const [next1, next2] = nextMovies;
+
   return (
     <div className="flex flex-col items-center w-full max-w-sm mx-auto">
-      <div
-        ref={cardRef}
-        style={{
-          transform: `translateX(${dragX}px) rotate(${rotate}deg)`,
-          transition,
-          cursor: voted ? 'default' : 'grab',
-          userSelect: 'none',
-          touchAction: 'pan-y',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(240,230,211,0.04)',
-        }}
-        className="relative w-full rounded-2xl overflow-hidden bg-noir-900"
-      >
-        {/* Poster image or fallback */}
-        {movie.poster ? (
-          <img
-            src={movie.poster}
-            alt={movie.title}
-            draggable={false}
-            className="w-full object-cover pointer-events-none"
-            style={{ aspectRatio: '2/3' }}
-          />
-        ) : (
-          <div className="w-full bg-noir-800 flex items-center justify-center" style={{ aspectRatio: '2/3' }}>
-            <span className="text-6xl opacity-30">🎬</span>
+
+      {/* ── Card stack (paddingTop creates the 2:3 aspect box) ── */}
+      <div className="relative w-full" style={{ paddingTop: '150%' }}>
+
+        {/* Ghost card 2 — back */}
+        {next2 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0, bottom: 0,
+              left: '5%', right: '5%',
+              borderRadius: 16,
+              overflow: 'hidden',
+              zIndex: 1,
+              transform: `translateY(${16 - 16 * stackProgress}px)`,
+              transition: stackTransition,
+              opacity: 0.4 + 0.3 * stackProgress,
+            }}
+          >
+            {next2.poster
+              ? <img src={next2.poster} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} draggable={false} />
+              : <div style={{ width: '100%', height: '100%', background: '#18141f' }} />
+            }
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(12,10,15,0.48)' }} />
           </div>
         )}
 
-        {/* LIKE badge */}
-        <div
-          className="absolute top-8 left-5 px-3 py-1 border-2 border-gold-400 rounded-sm"
-          style={{ opacity: likeOpacity, transform: 'rotate(-18deg)' }}
-        >
-          <span className="font-display font-semibold text-gold-400 text-2xl tracking-widest uppercase">Like</span>
-        </div>
-
-        {/* NOPE badge */}
-        <div
-          className="absolute top-8 right-5 px-3 py-1 border-2 border-crimson-400 rounded-sm"
-          style={{ opacity: nopeOpacity, transform: 'rotate(18deg)' }}
-        >
-          <span className="font-display font-semibold text-crimson-400 text-2xl tracking-widest uppercase">Nope</span>
-        </div>
-
-        {/* Info overlay */}
-        <div className="absolute bottom-0 left-0 right-0 p-5 pt-14" style={{ background: 'linear-gradient(to top, rgba(8,6,12,0.97) 0%, rgba(8,6,12,0.7) 50%, transparent 100%)' }}>
-          <h2 className="font-display text-2xl font-medium text-cream-200 leading-tight">{movie.title}</h2>
-          <div className="flex items-center gap-2 mt-1 font-sans text-xs text-cream-500 tracking-wider">
-            <span>{movie.year}</span>
-            <span className="text-cream-700">·</span>
-            <span>★ {movie.rating}</span>
+        {/* Ghost card 1 — middle */}
+        {next1 && (
+          <div
+            style={{
+              position: 'absolute',
+              top: 0, bottom: 0,
+              left: '2.5%', right: '2.5%',
+              borderRadius: 16,
+              overflow: 'hidden',
+              zIndex: 2,
+              transform: `translateY(${8 - 8 * stackProgress}px)`,
+              transition: stackTransition,
+              opacity: 0.62 + 0.25 * stackProgress,
+            }}
+          >
+            {next1.poster
+              ? <img src={next1.poster} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} draggable={false} />
+              : <div style={{ width: '100%', height: '100%', background: '#18141f' }} />
+            }
+            <div style={{ position: 'absolute', inset: 0, background: 'rgba(12,10,15,0.22)' }} />
           </div>
-          <p className="mt-2 font-sans text-xs text-cream-600 line-clamp-3 leading-relaxed">{movie.overview}</p>
+        )}
+
+        {/* Main interactive card */}
+        <div
+          ref={cardRef}
+          style={{
+            position: 'absolute',
+            top: 0, left: 0, right: 0, bottom: 0,
+            transform: `perspective(900px) translateX(${dragX}px) rotateZ(${rotate}deg) rotateY(${tiltY}deg)`,
+            transition,
+            cursor: voted ? 'default' : 'grab',
+            userSelect: 'none',
+            touchAction: 'pan-y',
+            borderRadius: 16,
+            overflow: 'hidden',
+            zIndex: 3,
+            background: '#110e18',
+            boxShadow: '0 22px 65px rgba(0,0,0,0.65), 0 0 0 1px rgba(240,230,211,0.04)',
+          }}
+        >
+          {movie.poster ? (
+            <img
+              src={movie.poster}
+              alt={movie.title}
+              draggable={false}
+              style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+            />
+          ) : (
+            <div style={{ width: '100%', height: '100%' }} className="bg-noir-800 flex items-center justify-center">
+              <span className="text-6xl opacity-30">🎬</span>
+            </div>
+          )}
+
+          {/* LIKE badge */}
+          <div
+            className="absolute top-8 left-5 px-3 py-1 border-2 border-gold-400 rounded-sm"
+            style={{ opacity: likeOpacity, transform: 'rotate(-18deg)' }}
+          >
+            <span className="font-display font-semibold text-gold-400 text-2xl tracking-widest uppercase">Like</span>
+          </div>
+
+          {/* NOPE badge */}
+          <div
+            className="absolute top-8 right-5 px-3 py-1 border-2 border-crimson-400 rounded-sm"
+            style={{ opacity: nopeOpacity, transform: 'rotate(18deg)' }}
+          >
+            <span className="font-display font-semibold text-crimson-400 text-2xl tracking-widest uppercase">Nope</span>
+          </div>
+
+          {/* Info overlay */}
+          <div
+            className="absolute bottom-0 left-0 right-0 p-5 pt-14"
+            style={{ background: 'linear-gradient(to top, rgba(8,6,12,0.97) 0%, rgba(8,6,12,0.72) 50%, transparent 100%)' }}
+          >
+            <h2 className="font-display text-2xl font-medium text-cream-200 leading-tight">{movie.title}</h2>
+            <div className="flex items-center gap-2 mt-1 font-sans text-xs text-cream-500 tracking-wider">
+              <span>{movie.year}</span>
+              <span className="text-cream-700">·</span>
+              <span>★ {movie.rating}</span>
+            </div>
+            <p className="mt-2 font-sans text-xs text-cream-600 line-clamp-3 leading-relaxed">{movie.overview}</p>
+          </div>
         </div>
       </div>
 
-      {/* Action buttons */}
+      {/* ── Action buttons ── */}
       <div className="flex gap-4 mt-5 w-full px-2">
         <button
           onClick={() => triggerExit(false)}
@@ -169,7 +231,7 @@ export default function MovieCard({ movie, onVote, voted }) {
           onClick={() => triggerExit(true)}
           disabled={voted}
           className="flex-1 flex items-center justify-center gap-2 py-4 rounded font-sans font-medium text-sm tracking-[0.15em] uppercase text-gold-400 bg-noir-800 border border-gold-400/20 hover:bg-gold-400/8 hover:border-gold-400/40 disabled:opacity-40 active:scale-[0.97] transition-all"
-          style={{ boxShadow: voted ? '' : '0 0 20px rgba(232,192,90,0.07)' }}
+          style={{ animation: voted ? '' : 'pulseGlow 3s ease-in-out infinite' }}
         >
           <span className="text-base leading-none">♥</span>
           Yes

@@ -176,6 +176,7 @@ export default function Room() {
               movie={currentMovie}
               onVote={handleVote}
               voted={voted}
+              nextMovies={movies.slice(index + 1, index + 3)}
             />
           </div>
         )}

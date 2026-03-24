@@ -93,8 +93,8 @@ export default function Home() {
       <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
 
         {/* ── Hero ── */}
-        <div className="text-center mb-10 animate-fade-up" style={{ animationDelay: '0ms' }}>
-          <div className="flex items-center justify-center gap-3 mb-5">
+        <div className="text-center mb-10">
+          <div className="flex items-center justify-center gap-3 mb-5 animate-fade-up" style={{ animationDelay: '0ms' }}>
             <div className="h-px w-10" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,192,90,0.5))' }} />
             <span className="font-sans text-gold-500 text-[10px] tracking-[0.4em] uppercase">Now Showing</span>
             <div className="h-px w-10" style={{ background: 'linear-gradient(270deg, transparent, rgba(232,192,90,0.5))' }} />
@@ -102,20 +102,28 @@ export default function Home() {
 
           <h1 className="font-display leading-none select-none">
             <span
-              className="block italic font-light text-cream-200 leading-none"
-              style={{ fontSize: 'clamp(3.5rem, 17vw, 4.8rem)' }}
+              className="block italic font-light text-cream-200 leading-none animate-fade-up"
+              style={{ fontSize: 'clamp(3.5rem, 17vw, 4.8rem)', animationDelay: '130ms' }}
             >
               Movie
             </span>
             <span
-              className="block font-semibold text-gold-400 leading-none tracking-[0.1em] uppercase"
-              style={{ fontSize: 'clamp(3.5rem, 17vw, 4.8rem)' }}
+              className="block font-semibold leading-none tracking-[0.1em] uppercase"
+              style={{
+                fontSize: 'clamp(3.5rem, 17vw, 4.8rem)',
+                background: 'linear-gradient(105deg, #b88e28 0%, #e8c05a 30%, #f2d875 44%, #fffaec 50%, #f2d875 56%, #e8c05a 70%, #b88e28 100%)',
+                backgroundSize: '250% auto',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+                animation: 'fadeUp 0.55s 280ms ease both, shimmerText 4s 950ms linear infinite',
+              }}
             >
               Match
             </span>
           </h1>
 
-          <p className="mt-5 font-sans text-cream-500 text-sm tracking-[0.18em]">
+          <p className="mt-5 font-sans text-cream-500 text-sm tracking-[0.18em] animate-fade-up" style={{ animationDelay: '440ms' }}>
             Swipe together. Decide together.
           </p>
         </div>
