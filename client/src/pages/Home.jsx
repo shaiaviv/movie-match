@@ -36,6 +36,111 @@ const LANGUAGES = [
   { label: 'JA',  code: 'ja' },
 ];
 
+const YEAR_MIN = 1900;
+const YEAR_MAX = new Date().getFullYear();
+
+function YearRangeSlider({ yearFrom, yearTo, setYearFrom, setYearTo }) {
+  const from = yearFrom ? parseInt(yearFrom) : YEAR_MIN;
+  const to   = yearTo   ? parseInt(yearTo)   : YEAR_MAX;
+
+  const fromPct = ((from - YEAR_MIN) / (YEAR_MAX - YEAR_MIN)) * 100;
+  const toPct   = ((to   - YEAR_MIN) / (YEAR_MAX - YEAR_MIN)) * 100;
+
+  const isAll = from === YEAR_MIN && to === YEAR_MAX;
+  const rangeLabel = isAll
+    ? 'All eras'
+    : `${from === YEAR_MIN ? 'Before' : from} – ${to === YEAR_MAX ? 'Now' : to}`;
+
+  const TICKS = [1920, 1940, 1960, 1980, 2000, 2020];
+
+  return (
+    <div className="mb-5">
+      {/* Header row */}
+      <div className="flex justify-between items-center mb-3">
+        <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase">Release year</p>
+        <span
+          className="font-mono text-xs font-semibold transition-all duration-200"
+          style={{ color: isAll ? 'rgba(232,192,90,0.45)' : '#e8c05a' }}
+        >
+          {rangeLabel}
+        </span>
+      </div>
+
+      {/* Slider area */}
+      <div className="relative" style={{ height: 36 }}>
+        {/* Base track */}
+        <div
+          className="absolute left-0 right-0 rounded-full"
+          style={{ top: '50%', transform: 'translateY(-50%)', height: 2, background: 'rgba(255,255,255,0.06)' }}
+        />
+        {/* Tick marks at decades */}
+        {TICKS.map(y => {
+          const pct = ((y - YEAR_MIN) / (YEAR_MAX - YEAR_MIN)) * 100;
+          const inRange = y >= from && y <= to;
+          return (
+            <div
+              key={y}
+              className="absolute rounded-full transition-colors duration-300"
+              style={{
+                left: `${pct}%`,
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: 2,
+                height: inRange ? 8 : 5,
+                background: inRange ? 'rgba(232,192,90,0.5)' : 'rgba(255,255,255,0.12)',
+              }}
+            />
+          );
+        })}
+        {/* Gold fill between handles */}
+        <div
+          className="absolute rounded-full"
+          style={{
+            top: '50%',
+            transform: 'translateY(-50%)',
+            height: 2,
+            left: `${fromPct}%`,
+            right: `${100 - toPct}%`,
+            background: 'linear-gradient(90deg, #b88e28, #f2d875)',
+            boxShadow: '0 0 6px rgba(232,192,90,0.35)',
+            transition: 'left 0.02s, right 0.02s',
+          }}
+        />
+        {/* From handle */}
+        <input
+          type="range"
+          min={YEAR_MIN} max={YEAR_MAX} step="1"
+          value={from}
+          onChange={e => {
+            const v = parseInt(e.target.value);
+            if (v < to) setYearFrom(v === YEAR_MIN ? '' : String(v));
+          }}
+          className="year-range-input"
+          style={{ zIndex: from > YEAR_MAX - 15 ? 5 : 3 }}
+        />
+        {/* To handle */}
+        <input
+          type="range"
+          min={YEAR_MIN} max={YEAR_MAX} step="1"
+          value={to}
+          onChange={e => {
+            const v = parseInt(e.target.value);
+            if (v > from) setYearTo(v === YEAR_MAX ? '' : String(v));
+          }}
+          className="year-range-input"
+          style={{ zIndex: 4 }}
+        />
+      </div>
+
+      {/* End labels */}
+      <div className="flex justify-between mt-1">
+        <span className="font-sans text-[9px] text-cream-600/35">{YEAR_MIN}</span>
+        <span className="font-sans text-[9px] text-cream-600/35">{YEAR_MAX}</span>
+      </div>
+    </div>
+  );
+}
+
 function Pills({ options, selected, onSelect, getKey, getLabel }) {
   return (
     <div className="flex flex-wrap gap-1.5">
@@ -240,30 +345,10 @@ export default function Home() {
             </FilterSection>
 
             {/* Year range */}
-            <FilterSection label="Release year">
-              <div className="flex items-center gap-2">
-                <input
-                  type="number"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  placeholder="From"
-                  value={yearFrom}
-                  onChange={e => setYearFrom(e.target.value)}
-                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
-                />
-                <span className="text-cream-600 text-xs shrink-0">–</span>
-                <input
-                  type="number"
-                  min="1900"
-                  max={new Date().getFullYear()}
-                  placeholder="To"
-                  value={yearTo}
-                  onChange={e => setYearTo(e.target.value)}
-                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
-                />
-              </div>
-              <p className="font-sans text-cream-600 text-[10px] mt-1.5">Leave blank for any year — fill one side for open-ended range</p>
-            </FilterSection>
+            <YearRangeSlider
+              yearFrom={yearFrom} yearTo={yearTo}
+              setYearFrom={setYearFrom} setYearTo={setYearTo}
+            />
 
             {/* Runtime */}
             <FilterSection label="Runtime">
@@ -302,6 +387,11 @@ export default function Home() {
                 .rating-slider { -webkit-appearance: none; appearance: none; height: 3px; border-radius: 9999px; outline: none; cursor: pointer; }
                 .rating-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: #e8c05a; box-shadow: 0 0 8px rgba(232,192,90,0.45); cursor: pointer; }
                 .rating-slider::-moz-range-thumb { width: 18px; height: 18px; border: none; border-radius: 50%; background: #e8c05a; box-shadow: 0 0 8px rgba(232,192,90,0.45); cursor: pointer; }
+                .year-range-input { position: absolute; width: 100%; height: 100%; top: 0; left: 0; -webkit-appearance: none; appearance: none; background: transparent; outline: none; pointer-events: none; }
+                .year-range-input::-webkit-slider-thumb { -webkit-appearance: none; pointer-events: all; width: 20px; height: 20px; border-radius: 50%; background: radial-gradient(circle at 38% 35%, #f2d875, #b88e28); box-shadow: 0 0 0 2px rgba(232,192,90,0.18), 0 2px 10px rgba(0,0,0,0.6); cursor: grab; transition: box-shadow 0.15s; }
+                .year-range-input::-webkit-slider-thumb:hover { box-shadow: 0 0 0 5px rgba(232,192,90,0.18), 0 0 14px rgba(232,192,90,0.55); }
+                .year-range-input::-webkit-slider-thumb:active { cursor: grabbing; }
+                .year-range-input::-moz-range-thumb { pointer-events: all; width: 20px; height: 20px; border: none; border-radius: 50%; background: radial-gradient(circle at 38% 35%, #f2d875, #b88e28); box-shadow: 0 0 0 2px rgba(232,192,90,0.18), 0 2px 10px rgba(0,0,0,0.6); cursor: grab; }
               `}</style>
               <div className="flex justify-between items-center mb-2">
                 <p className="font-sans text-cream-400 text-[10px] tracking-[0.35em] uppercase">Min rating ★</p>
