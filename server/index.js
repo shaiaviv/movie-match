@@ -65,10 +65,11 @@ io.on('connection', (socket) => {
     socket.join(room.id);
     socket.emit('room-joined', { roomId: room.id, movies: room.movies });
 
-    // Notify the creator
+    // Notify the creator and confirm to the joiner that their partner (creator) is present
     const creatorId = room.users.find(id => id !== socket.id);
     if (creatorId) {
       socket.to(room.id).emit('partner-joined');
+      socket.emit('partner-joined');
     }
     console.log('room joined', room.id, 'by', socket.id);
   });

@@ -8,8 +8,8 @@ A real-time two-player movie swiping app. Both people swipe through movies simul
 
 ## How It Works
 
-1. One person creates a room and picks a genre
-2. They share the 6-letter room code with their partner
+1. One person creates a room and applies filters (genre, year, runtime, rating, language, age rating)
+2. They share the 6-letter room code — or just paste the full link
 3. Both swipe through the same 20 movies at their own pace
 4. When both swipe right on the same movie — match!
 
@@ -21,17 +21,21 @@ A real-time two-player movie swiping app. Both people swipe through movies simul
 
 ![Home](docs/screenshot-home.png)
 
-**Pick a Category**
+**Filters & Room Setup**
 
-![Category Picker](docs/screenshot-category.png)
+![Filters](docs/screenshot-filters.png)
+
+**Join a Room**
+
+![Join Room](docs/screenshot-join.png)
 
 **Swiping**
 
 ![Swiping](docs/screenshot-swiping.png)
 
-**Join a Room**
+**It's a Match**
 
-![Join Room](docs/screenshot-join.png)
+![Match](docs/screenshot-match.png)
 
 ---
 
@@ -42,7 +46,7 @@ A real-time two-player movie swiping app. Both people swipe through movies simul
 | Frontend | React 18, Vite, Tailwind CSS |
 | Backend | Node.js, Express, Socket.io |
 | Movies API | TMDB (The Movie Database) |
-| Deployment | Railway (backend) + any static host (frontend) |
+| Deployment | Railway (backend) + Vercel (frontend) |
 
 ---
 
@@ -104,16 +108,16 @@ movie-match/
 ├── client/               # React frontend
 │   └── src/
 │       ├── components/
-│       │   ├── MovieCard.jsx    # Swipe gestures + card UI
-│       │   └── MatchModal.jsx   # Match celebration popup
+│       │   ├── MovieCard.jsx    # Swipe gestures, card stack, 3D tilt
+│       │   └── MatchModal.jsx   # Match celebration popup with confetti
 │       └── pages/
-│           ├── Home.jsx         # Room creation / join
+│           ├── Home.jsx         # Room creation (with filters) / join
 │           └── Room.jsx         # Main swiping screen
 │
 ├── server/               # Node.js backend
 │   ├── index.js          # Express + Socket.io server
 │   ├── roomManager.js    # Room state + vote/match logic
-│   └── tmdb.js           # TMDB API wrapper
+│   └── tmdb.js           # TMDB API wrapper with filter support
 │
 ├── package.json          # Root — `npm run dev` starts both
 ├── railway.json          # Railway deployment config
@@ -122,16 +126,44 @@ movie-match/
 
 ---
 
+## Filters
+
+When creating a room you can narrow down the movie pool with:
+
+| Filter | Options |
+|---|---|
+| Genre | All, Action, Comedy, Horror, Romance, Sci-Fi, Drama, Animation, Thriller, Adventure, Fantasy, Crime |
+| Release Year | Dual-handle slider — 1900 to present |
+| Runtime | Any / < 90m / 90–130m / 130m+ |
+| Age Rating | Any / G / PG / PG-13 / R |
+| Language | Any / EN / ES / FR / KO / JA |
+| Min Rating | Slider from 0 to 8+ (TMDB vote average) |
+
+All filters are forwarded to TMDB's Discover API on the server.
+
+---
+
 ## Swiping
 
 Cards support both touch (mobile) and mouse (desktop):
 
 - **Drag right** → Like
-- **Drag left** → Nope
+- **Drag left** → Pass
 - **Quick flick** → Registers as a swipe even if short
-- **Buttons** → Tap ✕ or ♥ for the same effect with animation
+- **Buttons** → Tap Pass or Yes for the same effect with animation
+- **Card stack** → Ghost cards behind the current card scale forward as you drag, showing what's coming next
 
-A match is detected the moment both players have liked the same movie.
+A match is detected the moment both players have liked the same movie. A confetti-burst modal appears for both players simultaneously.
+
+---
+
+## Joining
+
+The second player can join by:
+
+- Entering the **6-letter room code** directly
+- Pasting the **full room link** (e.g. `https://your-app.com/room/ABCXYZ`)
+- Navigating directly to the room URL
 
 ---
 
@@ -149,27 +181,22 @@ The repo includes a `railway.json` that configures everything automatically.
 4. Add the environment variable: `TMDB_API_KEY=your_key`
 5. Deploy — Railway gives you a public URL like `https://movie-match-server.up.railway.app`
 
-### Frontend — Static Host (Vercel / Netlify / Railway)
+### Frontend — Vercel (via GitHub Actions)
 
-The client is a plain Vite build. Point it at your backend URL before building:
+The repo includes a GitHub Actions workflow (`.github/workflows/deploy.yml`) that deploys to Vercel on every push to `main`.
 
-1. In `client/src/socket.js`, set the server URL to your Railway backend URL
-2. Build: `npm run build --prefix client`
-3. Deploy the `client/dist/` folder to Vercel, Netlify, or any static host
+Set these secrets in your GitHub repo settings:
 
-#### Vercel (one-click)
+- `VERCEL_TOKEN`
+- `VERCEL_ORG_ID`
+- `VERCEL_PROJECT_ID`
+- `VITE_SERVER_URL` — your Railway backend URL
+
+#### Manual deploy
 
 ```bash
 cd client
 npx vercel --prod
-```
-
-#### Netlify
-
-```bash
-cd client
-npm run build
-npx netlify deploy --prod --dir dist
 ```
 
 ---
@@ -180,6 +207,7 @@ npx netlify deploy --prod --dir dist
 |---|---|---|
 | `TMDB_API_KEY` | Yes | Your TMDB v3 API key — get one free at [themoviedb.org](https://www.themoviedb.org/settings/api) |
 | `PORT` | No | Server port (defaults to `3001`) |
+| `VITE_SERVER_URL` | No | Points the frontend build at a deployed backend URL |
 
 ---
 
