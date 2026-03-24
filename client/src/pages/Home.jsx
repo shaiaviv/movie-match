@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 
@@ -174,6 +174,64 @@ function FilterSection({ label, children }) {
   );
 }
 
+function CinemaParticles() {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let W = (canvas.width  = window.innerWidth);
+    let H = (canvas.height = window.innerHeight);
+    const onResize = () => { W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', onResize);
+
+    const particles = Array.from({ length: 110 }, () => ({
+      x: Math.random() * W, y: Math.random() * H,
+      r: 0.5 + Math.random() * 1.8,
+      vy: -(0.1 + Math.random() * 0.26), vx: (Math.random() - 0.5) * 0.07,
+      baseOp: 0.07 + Math.random() * 0.36,
+      phase: Math.random() * Math.PI * 2, phaseSpeed: 0.007 + Math.random() * 0.011,
+      warm: Math.random() > 0.22,
+    }));
+
+    const bokeh = Array.from({ length: 6 }, (_, i) => ({
+      x: (i / 5) * W + (Math.random() - 0.5) * 120, y: Math.random() * H,
+      r: 22 + Math.random() * 55, vy: -(0.03 + Math.random() * 0.07), vx: (Math.random() - 0.5) * 0.03,
+      op: 0.022 + Math.random() * 0.042, col: i % 2 === 0 ? [232, 192, 90] : [115, 65, 175],
+    }));
+
+    let raf;
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      bokeh.forEach(b => {
+        b.x += b.vx; b.y += b.vy;
+        if (b.y < -b.r * 2) { b.y = H + b.r; b.x = Math.random() * W; }
+        const g = ctx.createRadialGradient(b.x, b.y, 0, b.x, b.y, b.r);
+        g.addColorStop(0, `rgba(${b.col[0]},${b.col[1]},${b.col[2]},${b.op})`);
+        g.addColorStop(1, `rgba(${b.col[0]},${b.col[1]},${b.col[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2); ctx.fill();
+      });
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy; p.phase += p.phaseSpeed;
+        if (p.y < -4)    { p.y = H + 4; p.x = Math.random() * W; }
+        if (p.x < -4)    p.x = W + 4;
+        if (p.x > W + 4) p.x = -4;
+        const op = p.baseOp * (0.35 + 0.65 * Math.abs(Math.sin(p.phase)));
+        ctx.fillStyle = p.warm ? `rgba(232,196,102,${op})` : `rgba(240,218,175,${op})`;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2); ctx.fill();
+      });
+      raf = requestAnimationFrame(draw);
+    }
+    draw();
+    return () => { cancelAnimationFrame(raf); window.removeEventListener('resize', onResize); };
+  }, []);
+
+  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }} />;
+}
+
 export default function Home() {
   const navigate = useNavigate();
   const [mode, setMode] = useState(null);
@@ -249,7 +307,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative overflow-y-auto">
       {/* Atmospheric background */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -259,11 +317,13 @@ export default function Home() {
       <div className="absolute pointer-events-none" style={{ width: 420, height: 420, top: '-8%', left: '-18%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(200,155,35,0.13) 0%, transparent 70%)', filter: 'blur(40px)', animation: 'floatOrb 14s ease-in-out infinite' }} />
       <div className="absolute pointer-events-none" style={{ width: 360, height: 360, bottom: '4%', right: '-14%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(115,65,175,0.11) 0%, transparent 70%)', filter: 'blur(35px)', animation: 'floatOrb 19s ease-in-out infinite reverse' }} />
       <div className="absolute pointer-events-none" style={{ width: 220, height: 220, top: '38%', right: '8%', borderRadius: '50%', background: 'radial-gradient(circle, rgba(175,50,50,0.08) 0%, transparent 70%)', filter: 'blur(28px)', animation: 'floatOrb 11s ease-in-out infinite', animationDelay: '-4s' }} />
+      {/* Canvas particle field */}
+      <CinemaParticles />
       {/* Ornamental edge lines */}
       <div className="absolute top-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,192,90,0.25), transparent)' }} />
       <div className="absolute bottom-0 inset-x-0 h-px" style={{ background: 'linear-gradient(90deg, transparent, rgba(232,192,90,0.12), transparent)' }} />
 
-      <div className="relative z-10 w-full max-w-sm flex flex-col items-center">
+      <div className="relative z-10 w-full max-w-sm flex flex-col items-center py-8">
 
         {/* ── Hero ── */}
         <div className="text-center mb-10">
