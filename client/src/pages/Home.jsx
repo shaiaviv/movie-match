@@ -17,14 +17,6 @@ const GENRES = [
   { id: 80,    label: 'Crime',      emoji: '🔪' },
 ];
 
-const DECADES = [
-  { label: 'Any',  from: null, to: null },
-  { label: '80s',  from: 1980, to: 1989 },
-  { label: '90s',  from: 1990, to: 1999 },
-  { label: '00s',  from: 2000, to: 2009 },
-  { label: '10s',  from: 2010, to: 2019 },
-  { label: '20s',  from: 2020, to: null },
-];
 
 const RUNTIMES = [
   { label: 'Any',    min: null, max: null  },
@@ -86,7 +78,8 @@ export default function Home() {
 
   // Filters
   const [selectedGenre,   setSelectedGenre]   = useState(GENRES[0]);
-  const [selectedDecade,  setSelectedDecade]  = useState(DECADES[0]);
+  const [yearFrom,        setYearFrom]        = useState('');
+  const [yearTo,          setYearTo]          = useState('');
   const [selectedRuntime, setSelectedRuntime] = useState(RUNTIMES[0]);
   const [ageRating,       setAgeRating]       = useState('Any');
   const [language,        setLanguage]        = useState(LANGUAGES[0]);
@@ -124,8 +117,8 @@ export default function Home() {
     setLoading(true);
     socket.emit('create-room', {
       genreId:       selectedGenre.id,
-      yearFrom:      selectedDecade.from  || undefined,
-      yearTo:        selectedDecade.to    || undefined,
+      yearFrom:      yearFrom ? parseInt(yearFrom) : undefined,
+      yearTo:        yearTo   ? parseInt(yearTo)   : undefined,
       minRating:     minRating            || undefined,
       runtimeMin:    selectedRuntime.min  || undefined,
       runtimeMax:    selectedRuntime.max  || undefined,
@@ -246,15 +239,30 @@ export default function Home() {
               </div>
             </FilterSection>
 
-            {/* Decade */}
-            <FilterSection label="Decade">
-              <Pills
-                options={DECADES}
-                selected={selectedDecade}
-                onSelect={setSelectedDecade}
-                getKey={d => d.label}
-                getLabel={d => d.label}
-              />
+            {/* Year range */}
+            <FilterSection label="Release year">
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="From"
+                  value={yearFrom}
+                  onChange={e => setYearFrom(e.target.value)}
+                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
+                />
+                <span className="text-cream-600 text-xs shrink-0">–</span>
+                <input
+                  type="number"
+                  min="1900"
+                  max={new Date().getFullYear()}
+                  placeholder="To"
+                  value={yearTo}
+                  onChange={e => setYearTo(e.target.value)}
+                  className="w-full text-center font-mono text-sm text-cream-200 bg-noir-800 border border-cream-200/12 focus:border-gold-400/50 focus:outline-none rounded py-2 px-3 placeholder:text-cream-600/40 transition-colors"
+                />
+              </div>
+              <p className="font-sans text-cream-600 text-[10px] mt-1.5">Leave blank for any year — fill one side for open-ended range</p>
             </FilterSection>
 
             {/* Runtime */}
