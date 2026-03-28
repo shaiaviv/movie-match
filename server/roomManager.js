@@ -67,8 +67,14 @@ export function removeUser(socketId) {
   room.users = room.users.filter(id => id !== socketId);
   delete room.votes[socketId];
 
+  // Keep the room alive even with 0 connected users so a brief disconnect
+  // (network hiccup, tab backgrounded) doesn't destroy the room before the
+  // partner can join. Rooms will be cleaned up after 2 hours.
   if (room.users.length === 0) {
-    rooms.delete(room.id);
+    const ROOM_TTL_MS = 2 * 60 * 60 * 1000;
+    setTimeout(() => {
+      if (rooms.get(room.id)?.users.length === 0) rooms.delete(room.id);
+    }, ROOM_TTL_MS);
     return null;
   }
 
