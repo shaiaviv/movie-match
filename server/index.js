@@ -4,6 +4,7 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
 import { fetchMovies } from './tmdb.js';
+import { initSchema } from './db.js';
 import {
   createRoom,
   joinRoom,
@@ -41,7 +42,7 @@ io.on('connection', (socket) => {
         socket.emit('error', 'No movies found for those filters. Try adjusting your settings.');
         return;
       }
-      const roomId = createRoom(socket.id, movies);
+      const roomId = await createRoom(socket.id, movies);
       socket.join(roomId);
       socket.emit('room-created', { roomId, movies });
       console.log('room created', roomId);
@@ -52,9 +53,9 @@ io.on('connection', (socket) => {
   });
 
   // ── Join Room ─────────────────────────────────────────────────────────────
-  socket.on('join-room', (code) => {
+  socket.on('join-room', async (code) => {
     const upperCode = (code || '').toUpperCase().trim();
-    const result = joinRoom(upperCode, socket.id);
+    const result = await joinRoom(upperCode, socket.id);
 
     if (result.error) {
       socket.emit('error', result.error);
@@ -92,6 +93,10 @@ io.on('connection', (socket) => {
     }
   });
 });
+
+initSchema()
+  .then(() => console.log('DB schema ready'))
+  .catch(err => console.warn('DB init skipped (no DATABASE_URL?):', err.message));
 
 httpServer.listen(PORT, () => {
   console.log(`MovieMatch server running on http://localhost:${PORT}`);
