@@ -115,9 +115,12 @@ export default function Room() {
         className="flex items-center justify-between px-5 py-3.5 sticky top-0 z-10 border-b border-cream-200/8"
         style={{ background: 'rgba(12,10,15,0.88)', backdropFilter: 'blur(14px)' }}
       >
-        <span className="font-display text-xl italic font-light text-cream-200 tracking-tight select-none">
+        <button
+          onClick={() => { sessionStorage.clear(); navigate('/'); }}
+          className="font-display text-xl italic font-light text-cream-200 tracking-tight hover:text-cream-100 active:scale-[0.97] transition-all"
+        >
           Movie <span className="not-italic font-semibold text-gold-400">Match</span>
-        </span>
+        </button>
 
         <button
           onClick={copyLink}
