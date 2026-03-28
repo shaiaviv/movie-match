@@ -15,6 +15,7 @@ const GENRES = [
   { id: 12,    label: 'Adventure',  emoji: '🗺️' },
   { id: 14,    label: 'Fantasy',    emoji: '🧙' },
   { id: 80,    label: 'Crime',      emoji: '🔪' },
+  { id: 99,    label: 'Documentary',emoji: '🎥' },
 ];
 
 
