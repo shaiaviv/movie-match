@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import socket from '../socket.js';
 import MovieCard from '../components/MovieCard.jsx';
-import MatchModal from '../components/MatchModal.jsx';
 
 export default function Room() {
   const { roomId } = useParams();
@@ -19,7 +18,6 @@ export default function Room() {
   const [index, setIndex] = useState(0);
   const [voted, setVoted] = useState(false);
   const [partnerJoined, setPartnerJoined] = useState(false);
-  const [match, setMatch] = useState(null);
   const [matches, setMatches] = useState([]);
   const [partnerLeft, setPartnerLeft] = useState(false);
   const [done, setDone] = useState(false);
@@ -54,7 +52,6 @@ export default function Room() {
     });
 
     socket.on('match', (movie) => {
-      setMatch(movie);
       setMatches(prev => [...prev, movie]);
     });
 
@@ -229,7 +226,6 @@ export default function Room() {
         )}
       </main>
 
-      <MatchModal movie={match} onClose={() => setMatch(null)} />
     </div>
   );
 }
