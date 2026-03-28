@@ -18,6 +18,8 @@ export async function createRoom(socketId, movies) {
     users: [socketId],
     movies,
     votes: { [socketId]: {} },
+    matches: [],
+    done: new Set(),
   });
 
   if (pool) {
@@ -36,7 +38,7 @@ export async function joinRoom(code, socketId) {
     const { rows } = await pool.query('SELECT id, movies FROM rooms WHERE id = $1', [code])
       .catch(() => ({ rows: [] }));
     if (rows.length > 0) {
-      room = { id: rows[0].id, users: [], movies: rows[0].movies, votes: {} };
+      room = { id: rows[0].id, users: [], movies: rows[0].movies, votes: {}, matches: [], done: new Set() };
       rooms.set(code, room);
     }
   }
@@ -66,19 +68,30 @@ export function getRoomBySocket(socketId) {
 
 export function recordVote(roomId, socketId, movieId, liked) {
   const room = rooms.get(roomId);
-  if (!room) return null;
+  if (!room) return;
 
+  if (!room.votes[socketId]) room.votes[socketId] = {};
   room.votes[socketId][movieId] = liked;
 
-  if (!liked) return null;
+  if (!liked) return;
 
   const other = room.users.find(id => id !== socketId);
   if (other && room.votes[other]?.[movieId] === true) {
     const movie = room.movies.find(m => String(m.id) === String(movieId));
-    return movie || null;
+    if (movie) room.matches.push(movie);
   }
+}
 
-  return null;
+// Call when a player finishes all movies. Returns matches array when both
+// players are done, null while still waiting.
+export function markDone(roomId, socketId) {
+  const room = rooms.get(roomId);
+  if (!room) return null;
+
+  room.done.add(socketId);
+
+  const allDone = room.users.length > 0 && room.users.every(id => room.done.has(id));
+  return allDone ? room.matches : null;
 }
 
 export function removeUser(socketId) {

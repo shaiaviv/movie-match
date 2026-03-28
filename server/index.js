@@ -11,6 +11,7 @@ import {
   getRoom,
   getRoomBySocket,
   recordVote,
+  markDone,
   removeUser,
 } from './roomManager.js';
 
@@ -77,10 +78,15 @@ io.on('connection', (socket) => {
 
   // ── Vote ──────────────────────────────────────────────────────────────────
   socket.on('vote', ({ roomId, movieId, liked }) => {
-    const match = recordVote(roomId, socket.id, movieId, liked);
-    if (match) {
-      io.to(roomId).emit('match', match);
-      console.log('match!', match.title, 'in room', roomId);
+    recordVote(roomId, socket.id, movieId, liked);
+  });
+
+  // ── Player done ───────────────────────────────────────────────────────────
+  socket.on('player-done', (roomId) => {
+    const matches = markDone(roomId, socket.id);
+    if (matches !== null) {
+      io.to(roomId).emit('all-done', matches);
+      console.log('all done in room', roomId, '—', matches.length, 'match(es)');
     }
   });
 

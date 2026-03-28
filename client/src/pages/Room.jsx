@@ -20,7 +20,8 @@ export default function Room() {
   const [partnerJoined, setPartnerJoined] = useState(false);
   const [matches, setMatches] = useState([]);
   const [partnerLeft, setPartnerLeft] = useState(false);
-  const [done, setDone] = useState(false);
+  const [localDone, setLocalDone] = useState(false);  // this player finished swiping
+  const [done, setDone] = useState(false);             // both players done, show results
   const [waitingForPartner, setWaitingForPartner] = useState(false);
   const [code, setCode] = useState(roomId);
   const [copied, setCopied] = useState(false);
@@ -51,8 +52,9 @@ export default function Room() {
       setWaitingForPartner(false);
     });
 
-    socket.on('match', (movie) => {
-      setMatches(prev => [...prev, movie]);
+    socket.on('all-done', (m) => {
+      setMatches(m);
+      setDone(true);
     });
 
     socket.on('partner-disconnected', () => {
@@ -67,26 +69,27 @@ export default function Room() {
       socket.off('connect', handleReconnect);
       socket.off('room-joined');
       socket.off('partner-joined');
-      socket.off('match');
+      socket.off('all-done');
       socket.off('partner-disconnected');
       socket.off('error');
     };
   }, [roomId, navigate]);
 
   const handleVote = useCallback((liked) => {
-    if (voted || done) return;
+    if (voted || localDone) return;
     const movie = movies[index];
     socket.emit('vote', { roomId, movieId: movie.id, liked });
     setVoted(true);
 
     const next = index + 1;
     if (next >= movies.length) {
-      setDone(true);
+      setLocalDone(true);
+      socket.emit('player-done', roomId);
     } else {
       setIndex(next);
       setVoted(false);
     }
-  }, [voted, done, movies, index, roomId]);
+  }, [voted, localDone, movies, index, roomId]);
 
   function copyLink() {
     const url = `${window.location.origin}/room/${code}`;
@@ -172,7 +175,13 @@ export default function Room() {
           style={{ background: 'radial-gradient(circle, rgba(232,192,90,0.045) 0%, transparent 70%)' }}
         />
 
-        {done ? (
+        {localDone && !done ? (
+          <div className="relative z-10 text-center px-4">
+            <div className="text-4xl mb-4">⏳</div>
+            <h2 className="font-display italic font-light text-2xl text-cream-200">You're done!</h2>
+            <p className="font-sans text-cream-500 text-sm mt-2 tracking-wide">Waiting for your partner to finish…</p>
+          </div>
+        ) : done ? (
           <div className="relative z-10 w-full max-w-sm mx-auto text-center">
             <div className="text-5xl mb-4">🍿</div>
             <h2 className="font-display italic font-light text-3xl text-cream-200">All done!</h2>
