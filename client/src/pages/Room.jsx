@@ -20,26 +20,26 @@ export default function Room() {
   const [voted, setVoted] = useState(false);
   const [partnerJoined, setPartnerJoined] = useState(false);
   const [match, setMatch] = useState(null);
+  const [matches, setMatches] = useState([]);
   const [partnerLeft, setPartnerLeft] = useState(false);
   const [done, setDone] = useState(false);
   const [waitingForPartner, setWaitingForPartner] = useState(false);
-  const [code, setCode] = useState('');
+  const [code, setCode] = useState(roomId);
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const storedRoomId = sessionStorage.getItem('roomId');
-    const hasSession = storedRoomId === roomId && movies.length > 0;
-
     if (!socket.connected) socket.connect();
 
-    // Direct URL join — no existing session for this room
-    let didEmitJoin = false;
-    if (!hasSession) {
+    // Always emit join-room so the server tracks this socket for votes and match events.
+    // This also handles reconnects after a server restart — the server will re-register
+    // the socket in the room, re-initialise votes, and reply with room-joined.
+    socket.emit('join-room', roomId);
+
+    // Re-emit on reconnect (socket ID changes after a disconnect/reconnect cycle)
+    function handleReconnect() {
       socket.emit('join-room', roomId);
-      didEmitJoin = true;
-    } else {
-      setCode(roomId);
     }
+    socket.on('connect', handleReconnect);
 
     socket.on('room-joined', ({ roomId: joinedId, movies: m }) => {
       sessionStorage.setItem('movies', JSON.stringify(m));
@@ -55,6 +55,7 @@ export default function Room() {
 
     socket.on('match', (movie) => {
       setMatch(movie);
+      setMatches(prev => [...prev, movie]);
     });
 
     socket.on('partner-disconnected', () => {
@@ -62,18 +63,18 @@ export default function Room() {
     });
 
     socket.on('error', () => {
-      // Only redirect home if we explicitly tried to join (not the room creator)
-      if (didEmitJoin) navigate('/', { replace: true });
+      navigate('/', { replace: true });
     });
 
     return () => {
+      socket.off('connect', handleReconnect);
       socket.off('room-joined');
       socket.off('partner-joined');
       socket.off('match');
       socket.off('partner-disconnected');
       socket.off('error');
     };
-  }, [roomId, navigate]); // movies.length intentionally omitted — effect runs once per roomId
+  }, [roomId, navigate]);
 
   const handleVote = useCallback((liked) => {
     if (voted || done) return;
@@ -172,13 +173,42 @@ export default function Room() {
         />
 
         {done ? (
-          <div className="text-center relative z-10">
-            <div className="text-5xl mb-5">🍿</div>
+          <div className="relative z-10 w-full max-w-sm mx-auto text-center">
+            <div className="text-5xl mb-4">🍿</div>
             <h2 className="font-display italic font-light text-3xl text-cream-200">All done!</h2>
-            <p className="font-sans text-cream-500 text-sm mt-2 tracking-wide">You've seen all the films.</p>
+
+            {matches.length > 0 ? (
+              <>
+                <p className="font-sans text-gold-400 text-xs tracking-[0.25em] uppercase mt-3 mb-4">
+                  {matches.length} match{matches.length > 1 ? 'es' : ''} tonight
+                </p>
+                <div className="flex flex-col gap-2 mb-6">
+                  {matches.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 bg-noir-800 border border-cream-200/8 rounded px-3 py-2 text-left">
+                      {m.poster_path && (
+                        <img
+                          src={`https://image.tmdb.org/t/p/w92${m.poster_path}`}
+                          alt={m.title}
+                          className="w-10 h-14 object-cover rounded shrink-0"
+                        />
+                      )}
+                      <div className="min-w-0">
+                        <p className="font-display italic text-cream-200 text-base leading-tight truncate">{m.title}</p>
+                        <p className="font-sans text-cream-600 text-xs mt-0.5">
+                          {m.release_date?.slice(0, 4)} · ★ {m.vote_average?.toFixed(1)}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="font-sans text-cream-500 text-sm mt-2 mb-6 tracking-wide">No matches this time.</p>
+            )}
+
             <button
               onClick={() => { sessionStorage.clear(); navigate('/'); }}
-              className="mt-8 font-sans font-medium text-sm tracking-[0.2em] uppercase text-noir-950 bg-gold-400 hover:bg-gold-300 active:scale-[0.98] transition-all px-10 py-3.5 rounded"
+              className="font-sans font-medium text-sm tracking-[0.2em] uppercase text-noir-950 bg-gold-400 hover:bg-gold-300 active:scale-[0.98] transition-all px-10 py-3.5 rounded"
               style={{ boxShadow: '0 4px 24px rgba(232,192,90,0.22)' }}
             >
               Start Over

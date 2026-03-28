@@ -42,8 +42,11 @@ export async function joinRoom(code, socketId) {
   }
 
   if (!room) return { error: 'Room not found. Check your code and try again.' };
+
+  // Re-joining with the same socket (e.g. duplicate emit) — treat as success
+  if (room.users.includes(socketId)) return { room };
+
   if (room.users.length >= 2) return { error: 'Room is full. Only 2 players allowed.' };
-  if (room.users.includes(socketId)) return { error: 'Already in this room.' };
 
   room.users.push(socketId);
   room.votes[socketId] = {};
