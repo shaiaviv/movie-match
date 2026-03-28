@@ -308,7 +308,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative overflow-y-auto">
+    <div className="min-h-[100dvh] flex flex-col items-center justify-center px-6 relative overflow-x-hidden overflow-y-auto">
       {/* Atmospheric background */}
       <div
         className="absolute inset-0 pointer-events-none"
