@@ -2,6 +2,22 @@
 
 A real-time two-player movie swiping app. Both people swipe through movies simultaneously — when you both like the same one, it's a match.
 
+---
+
+## Code Explanation
+
+Interactive line-by-line walkthrough of every file, function, and design decision.
+
+**[shaiaviv.github.io/movie-match](https://shaiaviv.github.io/movie-match/)**
+
+| Page | What it covers |
+|---|---|
+| [Hub](https://shaiaviv.github.io/movie-match/index.html) | Project overview, runtime flow, quick function reference |
+| [Code Walkthrough](https://shaiaviv.github.io/movie-match/code-walkthrough.html) | Every file and function annotated line by line |
+| [Architecture](https://shaiaviv.github.io/movie-match/architecture.html) | Component map, socket events, call graph, tech decisions |
+| [Interview Prep](https://shaiaviv.github.io/movie-match/interview-prep.html) | 15 likely interview questions with full answers and code gotchas |
+| [Deep Dive: roomManager](https://shaiaviv.github.io/movie-match/deep-dive-roommanager.html) | Match detection algorithm, edge cases, and data structure breakdown |
+
 ![Home Screen](docs/screenshot-home.png)
 
 ---
