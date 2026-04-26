@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deep Dive: roomManager.js — MovieMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--green:#3fb950;--green-dim:#1a3a20;--blue:#58a6ff;--blue-dim:#0d2a4a;--orange:#d29922;--orange-dim:#3a2a00;--purple:#bc8cff;--purple-dim:#2d1f4a;--red:#f85149;--red-dim:#3a1010;--yellow:#e3b341;--yellow-dim:#3a2e00;--cyan:#39c5cf;--cyan-dim:#0d3038}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;line-height:1.6}
+nav{position:sticky;top:0;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:11px 20px;z-index:100;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;font-size:12px}nav a:hover{color:var(--text)}.cur{color:var(--green)}
+nav .logo{color:var(--text);font-weight:700;font-size:14px;margin-right:6px}
+.container{max-width:960px;margin:0 auto;padding:40px 20px}
+h2{font-size:20px;font-weight:700;margin:40px 0 16px;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border)}
+h3{font-size:16px;font-weight:600;color:var(--text);margin-bottom:8px}
+p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:10px}
+
+.hero{background:linear-gradient(135deg,var(--green-dim) 0%,var(--surface) 60%);border:1px solid var(--green);border-radius:12px;padding:28px 32px;margin-bottom:40px}
+.hero h1{font-size:28px;font-weight:900;color:var(--green);margin-bottom:8px}
+.hero p{font-size:14px;color:var(--muted);margin:0;max-width:600px}
+.hero .stats{display:flex;gap:24px;margin-top:16px;flex-wrap:wrap}
+.stat{font-size:12px;font-family:'JetBrains Mono',monospace}
+.stat .sv{font-size:20px;font-weight:700;color:var(--green);display:block}
+.stat .sl{color:var(--muted)}
+
+/* Room data structure */
+.room-shape{background:#010409;border:1px solid var(--green);border-radius:10px;padding:20px;margin-bottom:24px;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.9}
+.k{color:var(--blue)}.v{color:var(--green)}.c{color:#484f58;font-style:italic}
+
+/* Function sections */
+.fn-section{margin-bottom:40px;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.fn-header{background:var(--green-dim);border-bottom:1px solid var(--green);padding:14px 20px;display:flex;align-items:center;gap:12px}
+.fn-header .fname{font-family:'JetBrains Mono',monospace;font-size:15px;font-weight:700;color:var(--green)}
+.fn-header .ftype{font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-family:'JetBrains Mono',monospace}
+.fn-purpose{padding:14px 20px;background:var(--surface2);border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);line-height:1.7}
+.fn-purpose strong{color:var(--cyan)}
+
+/* Code table */
+.code-wrap{overflow:hidden}
+table.ct{width:100%;border-collapse:collapse}
+table.ct td{padding:3px 0;vertical-align:top;border-bottom:1px solid rgba(48,54,61,.4)}
+table.ct tr:hover td{background:var(--surface2)}
+.ln{width:44px;padding:3px 10px 3px 14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);user-select:none}
+.code{padding:3px 16px;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:pre}
+.ann{padding:3px 16px 3px 0;font-size:12px;color:var(--muted);max-width:300px;min-width:180px;line-height:1.5;border-left:3px solid var(--border)}
+.ann.key{border-left-color:var(--cyan);background:rgba(57,197,207,.04)}
+.ann.imp{border-left-color:var(--yellow);background:rgba(227,179,65,.04)}
+.ann.warn{border-left-color:var(--orange);background:rgba(210,153,34,.04)}
+.ann.good{border-left-color:var(--green);background:rgba(63,185,80,.04)}
+
+/* Syntax */
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.num{color:#79c0ff}.cm{color:#484f58;font-style:italic}.bi{color:#ffa657}.kw2{color:#79c0ff}.va{color:#e6edf3}
+
+/* Explain boxes */
+.explain{margin:0 0 0;padding:14px 18px;font-size:13px;line-height:1.7;border-top:1px solid var(--border)}
+.explain h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.explain-cyan{background:rgba(57,197,207,.05);color:var(--text)}.explain-cyan h4{color:var(--cyan)}
+.explain-orange{background:rgba(210,153,34,.05);color:var(--text)}.explain-orange h4{color:var(--orange)}
+.explain-purple{background:rgba(188,140,255,.05);color:var(--text)}.explain-purple h4{color:var(--purple)}
+.explain-green{background:rgba(63,185,80,.05);color:var(--text)}.explain-green h4{color:var(--green)}
+.explain-yellow{background:rgba(227,179,65,.05);color:var(--text)}.explain-yellow h4{color:var(--yellow)}
+.explain-blue{background:rgba(88,166,255,.05);color:var(--text)}.explain-blue h4{color:var(--blue)}
+
+/* Input/Output examples */
+.io-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:0;padding:14px 18px;border-top:1px solid var(--border);background:var(--surface2)}
+.io-box h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+.io-box.in h4{color:var(--orange)}.io-box.out h4{color:var(--green)}
+.io-box pre{font-family:'JetBrains Mono',monospace;font-size:11px;background:#010409;padding:10px;border-radius:6px;color:var(--text);white-space:pre-wrap;line-height:1.6}
+
+/* Edge case table */
+table.ec{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:24px}
+table.ec th{background:var(--surface2);color:var(--muted);text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border)}
+table.ec td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ec tr:hover td{background:var(--surface2)}
+table.ec .case{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--orange)}
+table.ec .handling{font-size:12px;color:var(--muted)}
+table.ec .result{font-size:12px;color:var(--green)}
+
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--purple)}
+
+@media(max-width:768px){.io-grid{grid-template-columns:1fr}.ann{display:none}.hero .stats{gap:16px}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🎬 MovieMatch</span>
+  <a href="index.html">← Hub</a>
+  <a href="code-walkthrough.html">Walkthrough</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="interview-prep.html">Interview</a>
+  <a href="#" class="cur">Deep Dive</a>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+    <a href="#shape">Room Shape</a> ·
+    <a href="#create">createRoom</a> ·
+    <a href="#join">joinRoom</a> ·
+    <a href="#vote">recordVote</a> ·
+    <a href="#done">markDone</a> ·
+    <a href="#remove">removeUser</a> ·
+    <a href="#edge">Edge Cases</a>
+  </span>
+</nav>
+<div class="container">
+
+<div class="hero">
+  <h1>Deep Dive: roomManager.js</h1>
+  <p>The heart of the app. This module owns all room state, all game logic, and all match detection. Every vote, every match, every player event flows through here.</p>
+  <div class="stats">
+    <div class="stat"><span class="sv">120</span><span class="sl">lines</span></div>
+    <div class="stat"><span class="sv">7</span><span class="sl">exported functions</span></div>
+    <div class="stat"><span class="sv">1</span><span class="sl">module-level Map (rooms)</span></div>
+    <div class="stat"><span class="sv">0</span><span class="sl">HTTP calls</span></div>
+    <div class="stat"><span class="sv">optional</span><span class="sl">Postgres persistence</span></div>
+  </div>
+</div>
+
+<!-- ROOM DATA STRUCTURE -->
+<h2 id="shape">The Room Data Structure</h2>
+<p>Every room is stored as this object in the <code>rooms</code> Map. Understanding this shape is essential to understanding every function below.</p>
+<div class="room-shape">
+{
+  <span class="k">id</span>: <span class="str">"ABCDEF"</span>,            <span class="c">// 6-char code — redundant copy of the Map key</span>
+
+  <span class="k">users</span>: [<span class="str">"socket_creator_id"</span>, <span class="str">"socket_joiner_id"</span>],  <span class="c">// max 2 socket IDs</span>
+
+  <span class="k">movies</span>: [               <span class="c">// 20 movies from TMDB (same for both players)</span>
+    { id: <span class="num">550</span>, title: <span class="str">"Fight Club"</span>, poster: <span class="str">"..."</span>, year: <span class="str">"1999"</span>, rating: <span class="num">8.4</span>, overview: <span class="str">"..."</span> },
+    ...
+  ],
+
+  <span class="k">votes</span>: {                <span class="c">// each player's votes, keyed by socket ID</span>
+    <span class="str">"socket_creator_id"</span>: {
+      <span class="num">550</span>: <span class="kw2">true</span>,           <span class="c">// creator liked Fight Club</span>
+      <span class="num">27205</span>: <span class="kw2">false</span>,        <span class="c">// creator passed Inception</span>
+    },
+    <span class="str">"socket_joiner_id"</span>: {
+      <span class="num">550</span>: <span class="kw2">true</span>,           <span class="c">// joiner also liked Fight Club → MATCH!</span>
+    }
+  },
+
+  <span class="k">matches</span>: [              <span class="c">// movies both players liked (populated by recordVote)</span>
+    { id: <span class="num">550</span>, title: <span class="str">"Fight Club"</span>, ... }
+  ],
+
+  <span class="k">done</span>: <span class="bi">Set</span> { <span class="str">"socket_creator_id"</span> }  <span class="c">// players who finished all 20 movies</span>
+}
+</div>
+
+<div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:32px">
+  <h3 style="color:var(--cyan);margin-bottom:10px">Why this structure?</h3>
+  <p style="margin:0"><strong>votes</strong> is a two-level object (socketId → movieId → boolean) rather than an array because the core operation is a O(1) lookup: "did socket X vote for movie Y?" With an array you'd need a linear scan every time. The current structure gives O(1) read and write for every vote check.</p>
+  <p style="margin-top:8px;margin-bottom:0"><strong>done</strong> is a Set (not an array) because <code>Set.has()</code> is O(1) and <code>Set.add()</code> is idempotent — adding the same socket twice doesn't create duplicates. This is safer than an array for the "player-done" event, which could theoretically be emitted more than once.</p>
+</div>
+
+<!-- generateCode -->
+<div class="fn-section">
+  <div class="fn-header">
+    <span class="ftype">private</span>
+    <span class="fname">generateCode()</span>
+  </div>
+  <div class="fn-purpose">Generates a unique 6-character room code from an alphabet that excludes visually ambiguous characters. Recursively retries on collision (astronomically rare).</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">5</td><td class="code"><span class="kw">function</span> <span class="fn">generateCode</span>() {</td><td class="ann"></td></tr>
+      <tr><td class="ln">6</td><td class="code">  <span class="kw">const</span> chars = <span class="str">'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'</span>;</td><td class="ann key">32 characters. Missing: I (looks like 1), O (looks like 0), 0 (looks like O), 1 (looks like I). Intentional to prevent errors when sharing codes verbally.</td></tr>
+      <tr><td class="ln">7</td><td class="code">  <span class="kw">let</span> code = <span class="str">''</span>;</td><td class="ann"></td></tr>
+      <tr><td class="ln">8</td><td class="code">  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">6</span>; i++) {</td><td class="ann">6 character code = 32^6 ≈ 1.07 billion possible codes.</td></tr>
+      <tr><td class="ln">9</td><td class="code">    code += chars[<span class="bi">Math</span>.<span class="fn">floor</span>(<span class="bi">Math</span>.<span class="fn">random</span>() * chars.length)];</td><td class="ann">Pick one char at random each iteration. chars.length = 32.</td></tr>
+      <tr><td class="ln">11</td><td class="code">  <span class="kw">return</span> rooms.<span class="fn">has</span>(code) ? <span class="fn">generateCode</span>() : code;</td><td class="ann warn">Recursive retry on collision. With 1 billion combinations and typical usage (hundreds of rooms), probability of collision is about 10^-7. Never loops in practice.</td></tr>
+    </table>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>(none — reads rooms Map)</pre></div>
+    <div class="io-box out"><h4>Output</h4><pre>"R4TKW9"  // 6-char string
+"A2BHMC"  // always uppercase
+"ZK7PNQ"  // from the 32-char alphabet</pre></div>
+  </div>
+</div>
+
+<!-- createRoom -->
+<div class="fn-section" id="create">
+  <div class="fn-header">
+    <span class="ftype">exported async</span>
+    <span class="fname">createRoom(socketId, movies)</span>
+  </div>
+  <div class="fn-purpose">Creates the room data structure in memory and optionally persists it to Postgres. Returns the new room code. Called once per room, by the first player.</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">14</td><td class="code"><span class="kw">export async function</span> <span class="fn">createRoom</span>(socketId, movies) {</td><td class="ann"></td></tr>
+      <tr><td class="ln">15</td><td class="code">  <span class="kw">const</span> id = <span class="fn">generateCode</span>();</td><td class="ann">Unique 6-char code. Defined above.</td></tr>
+      <tr><td class="ln">16</td><td class="code">  rooms.<span class="fn">set</span>(id, {</td><td class="ann imp">Stores the complete room object in the module-level Map. All future operations access this same object reference.</td></tr>
+      <tr><td class="ln">17</td><td class="code">    id,</td><td class="ann">Stored redundantly — Map key is also id. Useful when room is found by value (getRoomBySocket).</td></tr>
+      <tr><td class="ln">18</td><td class="code">    users: [socketId],</td><td class="ann">Creator is the first user. Array will have 2 elements max.</td></tr>
+      <tr><td class="ln">19</td><td class="code">    movies,</td><td class="ann">The 20-movie TMDB array. Same array shared for display to both players.</td></tr>
+      <tr><td class="ln">20</td><td class="code">    votes: { [socketId]: {} },</td><td class="ann key">Creator's vote object initialized immediately. [socketId] is computed property syntax — the variable's value becomes the key name.</td></tr>
+      <tr><td class="ln">21</td><td class="code">    matches: [],</td><td class="ann">Empty — populated by recordVote as mutual likes accumulate.</td></tr>
+      <tr><td class="ln">22</td><td class="code">    done: <span class="kw">new</span> <span class="bi">Set</span>(),</td><td class="ann">Empty Set — sockets are added when they emit player-done.</td></tr>
+      <tr><td class="ln">25</td><td class="code">  <span class="kw">if</span> (pool) {</td><td class="ann">null in local dev (no DATABASE_URL). The await below only runs in production.</td></tr>
+      <tr><td class="ln">26</td><td class="code">    <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'INSERT INTO rooms (id, movies) VALUES ($1, $2)'</span>, [id, <span class="bi">JSON</span>.<span class="fn">stringify</span>(movies)])</td><td class="ann">Parameterized query ($1, $2) prevents SQL injection. JSON.stringify converts movie array to a string for JSONB storage.</td></tr>
+      <tr><td class="ln">27</td><td class="code">      .<span class="fn">catch</span>(err =&gt; <span class="bi">console</span>.<span class="fn">error</span>(<span class="str">'DB createRoom error:'</span>, err));</td><td class="ann warn">DB failure is non-fatal. Room exists in memory. A DB write failure just means the room won't recover after a server restart — but the current session still works.</td></tr>
+      <tr><td class="ln">30</td><td class="code">  <span class="kw">return</span> id;</td><td class="ann">Returns just the code. Caller (index.js) uses it for socket.join() and to emit room-created.</td></tr>
+    </table>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>socketId: "abc123xyz"
+movies: [{ id: 550, title: "Fight Club", ... }, ...]  // 20 movies</pre></div>
+    <div class="io-box out"><h4>Output (Promise)</h4><pre>"ABCDEF"  // 6-char room code
+// Side effect: rooms.set("ABCDEF", { id, users, movies, votes, matches, done })</pre></div>
+  </div>
+</div>
+
+<!-- joinRoom -->
+<div class="fn-section" id="join">
+  <div class="fn-header">
+    <span class="ftype">exported async</span>
+    <span class="fname">joinRoom(code, socketId)</span>
+  </div>
+  <div class="fn-purpose">Finds the room (memory-first, then DB fallback). Validates it's not full, and the player isn't already in it. Adds the new player to users and votes. Returns the room or an error.</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">33</td><td class="code"><span class="kw">export async function</span> <span class="fn">joinRoom</span>(code, socketId) {</td><td class="ann"></td></tr>
+      <tr><td class="ln">34</td><td class="code">  <span class="kw">let</span> room = rooms.<span class="fn">get</span>(code);</td><td class="ann">Map.get() is O(1). Returns undefined if not found.</td></tr>
+      <tr><td class="ln">37</td><td class="code">  <span class="kw">if</span> (!room &amp;&amp; pool) {</td><td class="ann key">Cache miss + DB configured = server may have restarted. Try to recover from Postgres.</td></tr>
+      <tr><td class="ln">38</td><td class="code">    <span class="kw">const</span> { rows } = <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'SELECT id, movies FROM rooms WHERE id = $1'</span>, [code])</td><td class="ann">Only fetches id and movies — the minimum needed to rebuild a room. Votes can't be recovered (not stored in DB).</td></tr>
+      <tr><td class="ln">39</td><td class="code">      .<span class="fn">catch</span>(() =&gt; ({ rows: [] }));</td><td class="ann good">DB error → empty rows → "room not found" path. App never crashes due to DB unavailability.</td></tr>
+      <tr><td class="ln">41</td><td class="code">      room = { id: rows[<span class="num">0</span>].id, users: [], movies: rows[<span class="num">0</span>].movies, votes: {}, matches: [], done: <span class="kw">new</span> <span class="bi">Set</span>() };</td><td class="ann warn">Restored room starts fresh — empty users, empty votes. Both players rejoin from scratch. Vote history is lost but the movie list is preserved.</td></tr>
+      <tr><td class="ln">42</td><td class="code">      rooms.<span class="fn">set</span>(code, room);</td><td class="ann">Re-hydrate in-memory cache. Next joinRoom call will find it without hitting DB.</td></tr>
+      <tr><td class="ln">46</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> { error: <span class="str">'Room not found. Check your code and try again.'</span> };</td><td class="ann imp">Returns error object, not exception. Caller (index.js) checks result.error. The server stays up.</td></tr>
+      <tr><td class="ln">49</td><td class="code">  <span class="kw">if</span> (room.users.<span class="fn">includes</span>(socketId)) <span class="kw">return</span> { room };</td><td class="ann good">Idempotent: same socket re-joining (duplicate event, Room.jsx mount) returns success immediately without side effects.</td></tr>
+      <tr><td class="ln">51</td><td class="code">  <span class="kw">if</span> (room.users.length &gt;= <span class="num">2</span>) <span class="kw">return</span> { error: <span class="str">'Room is full. Only 2 players allowed.'</span> };</td><td class="ann">Hard capacity check. Third player cannot join.</td></tr>
+      <tr><td class="ln">53</td><td class="code">  room.users.<span class="fn">push</span>(socketId);</td><td class="ann">Add to users array. Now room.users.length === 2.</td></tr>
+      <tr><td class="ln">54</td><td class="code">  room.votes[socketId] = {};</td><td class="ann">Initialize joiner's vote record. Creator's was set in createRoom.</td></tr>
+      <tr><td class="ln">55</td><td class="code">  <span class="kw">return</span> { room };</td><td class="ann">Return the full room object. Caller uses room.id and room.movies.</td></tr>
+    </table>
+  </div>
+  <div class="explain explain-purple">
+    <h4>Error as Value Pattern</h4>
+    <p>joinRoom returns either <code>{ room }</code> or <code>{ error }</code> instead of throwing exceptions. The caller pattern is:</p>
+    <pre style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#010409;padding:10px;border-radius:6px;margin-top:8px;color:var(--text)">const result = await joinRoom(code, socketId);
+if (result.error) {
+  socket.emit('error', result.error);
+  return;
+}
+// result.room is safe to use here</pre>
+    <p style="margin-top:8px">Advantages: the error is a string that can be sent directly to the client, no try/catch boilerplate, and the server never crashes from expected failure modes (bad code, full room).</p>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>code: "ABCDEF"
+socketId: "joiner_socket_id"</pre></div>
+    <div class="io-box out"><h4>Output (Promise)</h4><pre>// Success:
+{ room: { id: "ABCDEF", users: [...], ... } }
+
+// Failure:
+{ error: "Room not found. Check your code..." }
+{ error: "Room is full. Only 2 players allowed." }</pre></div>
+  </div>
+</div>
+
+<!-- recordVote -->
+<div class="fn-section" id="vote">
+  <div class="fn-header">
+    <span class="ftype">exported</span>
+    <span class="fname">recordVote(roomId, socketId, movieId, liked)</span>
+  </div>
+  <div class="fn-purpose">Records one player's vote for a movie. If the vote is a like, immediately checks if the other player also liked it — if so, pushes to matches. This is the core match detection algorithm.</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">69</td><td class="code"><span class="kw">export function</span> <span class="fn">recordVote</span>(roomId, socketId, movieId, liked) {</td><td class="ann"></td></tr>
+      <tr><td class="ln">70</td><td class="code">  <span class="kw">const</span> room = rooms.<span class="fn">get</span>(roomId);</td><td class="ann"></td></tr>
+      <tr><td class="ln">71</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span>;</td><td class="ann warn">Room might not exist if server restarted and clients are still sending votes. Silently ignore — returning early is safe, the vote is just lost.</td></tr>
+      <tr><td class="ln">73</td><td class="code">  <span class="kw">if</span> (!room.votes[socketId]) room.votes[socketId] = {};</td><td class="ann">Defensive initialization. Should always already exist from createRoom/joinRoom, but handles DB-restored rooms.</td></tr>
+      <tr><td class="ln">74</td><td class="code">  room.votes[socketId][movieId] = liked;</td><td class="ann key">Core storage: nested object lookup. votes[socketId][movieId] = true or false. O(1) write.</td></tr>
+      <tr><td class="ln">76</td><td class="code">  <span class="kw">if</span> (!liked) <span class="kw">return</span>;</td><td class="ann">Pass votes can never create matches. Skip the expensive check entirely.</td></tr>
+      <tr><td class="ln">78</td><td class="code">  <span class="kw">const</span> other = room.users.<span class="fn">find</span>(id =&gt; id !== socketId);</td><td class="ann">Find the other player's socket ID. With 2-element array, this is the one that isn't the current voter.</td></tr>
+      <tr><td class="ln">79</td><td class="code">  <span class="kw">if</span> (other &amp;&amp; room.votes[other]?.[movieId] === <span class="kw2">true</span>) {</td><td class="ann key">Optional chaining: if other hasn't voted yet (undefined), short-circuits to undefined. === true is strict — won't match undefined or false. Both conditions must be met.</td></tr>
+      <tr><td class="ln">80</td><td class="code">    <span class="kw">const</span> movie = room.movies.<span class="fn">find</span>(m =&gt; <span class="bi">String</span>(m.id) === <span class="bi">String</span>(movieId));</td><td class="ann warn">String() on both sides: TMDB IDs are numbers (550), but movieId from the client socket might be a string ("550"). Type coercion makes the comparison robust.</td></tr>
+      <tr><td class="ln">81</td><td class="code">    <span class="kw">if</span> (movie) room.matches.<span class="fn">push</span>(movie);</td><td class="ann imp">MATCH DETECTED. Pushed to matches array. Not broadcast yet — held until markDone() returns all players done.</td></tr>
+    </table>
+  </div>
+  <div class="explain explain-yellow">
+    <h4>Match Detection: When Exactly Does It Fire?</h4>
+    <p>The algorithm is <strong>event-driven, not polling</strong>. Every incoming vote triggers a cross-check. The question "has the other player already liked this movie?" is answered in O(1) using the votes object.</p>
+    <p>Two valid orderings both produce a match:</p>
+    <pre style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#010409;padding:10px;border-radius:6px;margin-top:8px;color:var(--text)"># Player A votes first, Player B votes second:
+recordVote(room, A, movie550, true)  → other=B, votes[B][550] = undefined → no match yet
+recordVote(room, B, movie550, true)  → other=A, votes[A][550] = true → MATCH!
+
+# Player B votes first, Player A votes second:
+recordVote(room, B, movie550, true)  → other=A, votes[A][550] = undefined → no match yet
+recordVote(room, A, movie550, true)  → other=B, votes[B][550] = true → MATCH!</pre>
+    <p style="margin-top:8px">The check runs on the <em>second</em> like to arrive — whichever player votes later triggers the match detection.</p>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>roomId: "ABCDEF"
+socketId: "socket_joiner_id"
+movieId: 550  // Fight Club
+liked: true</pre></div>
+    <div class="io-box out"><h4>Output</h4><pre>// void — no return value
+// Side effect if match: room.matches.push(movie)
+// room.votes["socket_joiner_id"][550] = true</pre></div>
+  </div>
+</div>
+
+<!-- markDone -->
+<div class="fn-section" id="done">
+  <div class="fn-header">
+    <span class="ftype">exported</span>
+    <span class="fname">markDone(roomId, socketId)</span>
+  </div>
+  <div class="fn-purpose">Called when a player finishes all 20 movies. Adds them to the done Set. Returns the accumulated matches ONLY when ALL players are in the done Set — otherwise returns null. This is the "gate" that controls when matches are revealed.</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">87</td><td class="code"><span class="kw">export function</span> <span class="fn">markDone</span>(roomId, socketId) {</td><td class="ann"></td></tr>
+      <tr><td class="ln">88</td><td class="code">  <span class="kw">const</span> room = rooms.<span class="fn">get</span>(roomId);</td><td class="ann"></td></tr>
+      <tr><td class="ln">89</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann">Room doesn't exist (server restart). Return null — caller won't broadcast.</td></tr>
+      <tr><td class="ln">91</td><td class="code">  room.done.<span class="fn">add</span>(socketId);</td><td class="ann good">Set.add is idempotent — if a player emits player-done twice, done Set won't double-count them.</td></tr>
+      <tr><td class="ln">93</td><td class="code">  <span class="kw">const</span> allDone = room.users.length &gt; <span class="num">0</span> &amp;&amp; room.users.<span class="fn">every</span>(id =&gt; room.done.<span class="fn">has</span>(id));</td><td class="ann key">every() returns true only if ALL users are in done. length > 0 guard prevents an edge case: if users is [] (both disconnected before finishing), every() on empty array returns true — which would incorrectly trigger all-done.</td></tr>
+      <tr><td class="ln">94</td><td class="code">  <span class="kw">return</span> allDone ? room.matches : <span class="kw2">null</span>;</td><td class="ann imp">Returns matches[] (possibly empty []) when done. null means "still waiting". Caller MUST check !== null (not just truthy) because [] is falsy.</td></tr>
+    </table>
+  </div>
+  <div class="explain explain-blue">
+    <h4>The Critical !== null Check</h4>
+    <p>In index.js, the caller is:</p>
+    <pre style="font-family:'JetBrains Mono',monospace;font-size:12px;background:#010409;padding:10px;border-radius:6px;margin-top:8px;color:var(--text)">const matches = markDone(roomId, socket.id);
+if (matches !== null) {
+  io.to(roomId).emit('all-done', matches);
+}</pre>
+    <p style="margin-top:8px">This must be <code>!== null</code> and NOT <code>if (matches)</code>, because:</p>
+    <ul style="margin:8px 0 0 20px;line-height:2">
+      <li><code>null</code> → still waiting → don't broadcast</li>
+      <li><code>[]</code> → all done, no matches → broadcast the empty array (players see "No matches this time")</li>
+      <li><code>[{...}]</code> → all done, matches found → broadcast the array</li>
+    </ul>
+    <p style="margin-top:8px">If we used <code>if (matches)</code>, an empty <code>[]</code> would be falsy and "all done, no matches" would never broadcast the <code>all-done</code> event — both players would wait forever.</p>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>roomId: "ABCDEF"
+socketId: "socket_creator_id"  // first player to finish</pre></div>
+    <div class="io-box out"><h4>Output scenarios</h4><pre>// Only creator done (joiner still swiping):
+null  →  caller does nothing, wait
+
+// Both done, no mutual likes:
+[]   →  all-done broadcast with empty array
+
+// Both done, 2 mutual likes:
+[{ id: 550, title: "Fight Club", ... },
+ { id: 27205, title: "Inception", ... }]</pre></div>
+  </div>
+</div>
+
+<!-- removeUser -->
+<div class="fn-section" id="remove">
+  <div class="fn-header">
+    <span class="ftype">exported</span>
+    <span class="fname">removeUser(socketId)</span>
+  </div>
+  <div class="fn-purpose">Called on socket disconnect. Removes the player from their room. If the room becomes empty, schedules a 2-hour TTL cleanup. Returns the room if a partner is still there, null if the room is empty.</div>
+  <div class="code-wrap">
+    <table class="ct">
+      <tr><td class="ln">97</td><td class="code"><span class="kw">export function</span> <span class="fn">removeUser</span>(socketId) {</td><td class="ann"></td></tr>
+      <tr><td class="ln">98</td><td class="code">  <span class="kw">const</span> room = <span class="fn">getRoomBySocket</span>(socketId);</td><td class="ann warn">O(n rooms) linear scan. Acceptable for disconnect events (infrequent). At large scale, a reverse Map would be needed.</td></tr>
+      <tr><td class="ln">99</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann">Player disconnected before joining any room (e.g. connection dropped on the home screen).</td></tr>
+      <tr><td class="ln">101</td><td class="code">  room.users = room.users.<span class="fn">filter</span>(id =&gt; id !== socketId);</td><td class="ann">Creates a new array without this socketId. Immutable-style update (filter returns new array).</td></tr>
+      <tr><td class="ln">102</td><td class="code">  <span class="kw">delete</span> room.votes[socketId];</td><td class="ann">Clean up vote history so stale data doesn't linger.</td></tr>
+      <tr><td class="ln">104</td><td class="code">  <span class="kw">if</span> (room.users.length === <span class="num">0</span>) {</td><td class="ann">Both players left (second disconnect). Schedule cleanup.</td></tr>
+      <tr><td class="ln">105</td><td class="code">    <span class="kw">const</span> ROOM_TTL_MS = <span class="num">2</span> * <span class="num">60</span> * <span class="num">60</span> * <span class="num">1000</span>;</td><td class="ann key">2 hours = 7,200,000ms. Named constant explains what the number means. Gives players time to reconnect before cleanup.</td></tr>
+      <tr><td class="ln">106</td><td class="code">    <span class="fn">setTimeout</span>(<span class="kw">async</span> () =&gt; {</td><td class="ann good">Delayed cleanup — not immediate. Players might reconnect within 2 hours. Async callback allows the DB delete await.</td></tr>
+      <tr><td class="ln">107</td><td class="code">      <span class="kw">if</span> (rooms.<span class="fn">get</span>(room.id)?.users.length === <span class="num">0</span>) {</td><td class="ann key">Re-checks after the TTL. A player might have rejoined in the 2 hours. Optional chaining handles the case where the room was already deleted.</td></tr>
+      <tr><td class="ln">108</td><td class="code">        rooms.<span class="fn">delete</span>(room.id);</td><td class="ann">Remove from memory.</td></tr>
+      <tr><td class="ln">109</td><td class="code">        <span class="kw">if</span> (pool) <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'DELETE FROM rooms WHERE id = $1'</span>, [room.id]).</span><span class="fn">catch</span>(...);</td><td class="ann">Optional DB cleanup. Non-fatal if it fails.</td></tr>
+      <tr><td class="ln">115</td><td class="code">    <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann">Room is empty — tell caller not to emit partner-disconnected to nobody.</td></tr>
+      <tr><td class="ln">118</td><td class="code">  <span class="kw">return</span> room;</td><td class="ann imp">One player still in room — caller emits partner-disconnected to the remaining player.</td></tr>
+    </table>
+  </div>
+  <div class="io-grid">
+    <div class="io-box in"><h4>Input</h4><pre>socketId: "socket_creator_id"  // disconnected socket</pre></div>
+    <div class="io-box out"><h4>Output</h4><pre>// Joiner still in room:
+room  →  caller emits partner-disconnected to joiner
+
+// Room is now empty (both disconnected):
+null  →  caller does nothing, cleanup scheduled
+
+// Socket wasn't in any room:
+null  →  caller does nothing</pre></div>
+  </div>
+</div>
+
+<!-- EDGE CASES -->
+<h2 id="edge">Edge Cases &amp; Error Handling</h2>
+<table class="ec">
+  <thead>
+    <tr><th>Scenario</th><th>How it's handled</th><th>Result</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="case">Player votes after server restart</td>
+      <td class="handling">recordVote checks <code>if (!room) return</code></td>
+      <td class="result">Vote silently ignored. Player's UI still advances normally.</td>
+    </tr>
+    <tr>
+      <td class="case">Same socket emits join-room twice</td>
+      <td class="handling">joinRoom: <code>if (room.users.includes(socketId)) return { room }</code></td>
+      <td class="result">Idempotent success. No duplicate in users array.</td>
+    </tr>
+    <tr>
+      <td class="case">Third player tries to join</td>
+      <td class="handling">joinRoom: <code>if (room.users.length >= 2) return { error }</code></td>
+      <td class="result">Error emitted to client: "Room is full."</td>
+    </tr>
+    <tr>
+      <td class="case">Invalid room code</td>
+      <td class="handling">rooms.get() returns undefined, DB query returns empty rows</td>
+      <td class="result">Error returned: "Room not found. Check your code..."</td>
+    </tr>
+    <tr>
+      <td class="case">Player emits player-done twice</td>
+      <td class="handling">markDone: Set.add is idempotent — second add is a no-op</td>
+      <td class="result">No double-trigger. allDone logic unchanged.</td>
+    </tr>
+    <tr>
+      <td class="case">Only one player joins (partner never comes)</td>
+      <td class="handling">markDone: <code>room.users.every()</code> checks all current users — if only 1 user, returns true after that 1 is done</td>
+      <td class="result">After that player finishes, all-done fires with empty matches (no matches possible with 1 player).</td>
+    </tr>
+    <tr>
+      <td class="case">DB write fails on createRoom</td>
+      <td class="handling">.catch(err => console.error()) — error is caught and logged</td>
+      <td class="result">Room exists in memory, session works. Won't recover after server restart.</td>
+    </tr>
+    <tr>
+      <td class="case">movieId type mismatch (string vs number)</td>
+      <td class="handling">String(m.id) === String(movieId) in recordVote</td>
+      <td class="result">Both sides coerced to string before comparison. Match detection works regardless of type.</td>
+    </tr>
+    <tr>
+      <td class="case">Players reconnect after server restart (with DB)</td>
+      <td class="handling">joinRoom cache miss → Postgres query → room reconstructed with movies but empty votes</td>
+      <td class="result">Both players get the same movie list. They start fresh (vote history lost).</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>

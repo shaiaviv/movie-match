@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MovieMatch — Study Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface2: #1c2128;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #8b949e;
+  --green: #3fb950;   --green-dim: #1a3a20;
+  --blue: #58a6ff;    --blue-dim: #0d2a4a;
+  --orange: #d29922;  --orange-dim: #3a2a00;
+  --purple: #bc8cff;  --purple-dim: #2d1f4a;
+  --red: #f85149;     --red-dim: #3a1010;
+  --yellow: #e3b341;  --yellow-dim: #3a2e00;
+  --cyan: #39c5cf;    --cyan-dim: #0d3038;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: 'Heebo', sans-serif; line-height: 1.6; }
+
+nav {
+  position: sticky; top: 0; background: rgba(13,17,23,0.92);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 20px; padding: 12px 24px; z-index: 100;
+}
+nav a { color: var(--muted); text-decoration: none; font-size: 13px; transition: color .15s; }
+nav a:hover { color: var(--text); }
+nav .logo { color: var(--text); font-weight: 700; font-size: 15px; margin-right: 8px; }
+
+.hero {
+  background: linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+  border-bottom: 1px solid var(--border);
+  padding: 64px 24px 48px;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(88,166,255,0.07), transparent);
+  pointer-events: none;
+}
+.hero h1 { font-size: clamp(2.5rem, 6vw, 4rem); font-weight: 900; letter-spacing: -1px; }
+.hero h1 span { color: var(--blue); }
+.hero p { color: var(--muted); font-size: 16px; margin-top: 12px; max-width: 520px; margin-left: auto; margin-right: auto; }
+.badge-row { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 24px; }
+.badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
+.badge-blue  { border-color: var(--blue);   color: var(--blue);   background: var(--blue-dim); }
+.badge-green { border-color: var(--green);  color: var(--green);  background: var(--green-dim); }
+.badge-orange{ border-color: var(--orange); color: var(--orange); background: var(--orange-dim); }
+.badge-purple{ border-color: var(--purple); color: var(--purple); background: var(--purple-dim); }
+.badge-cyan  { border-color: var(--cyan);   color: var(--cyan);   background: var(--cyan-dim); }
+.badge-red   { border-color: var(--red);    color: var(--red);    background: var(--red-dim); }
+.badge-yellow{ border-color: var(--yellow); color: var(--yellow); background: var(--yellow-dim); }
+
+.container { max-width: 960px; margin: 0 auto; padding: 48px 24px; }
+h2 { font-size: 22px; font-weight: 700; margin-bottom: 20px; color: var(--text); }
+h3 { font-size: 16px; font-weight: 600; color: var(--text); }
+
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; margin-bottom: 48px; }
+.study-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 24px; text-decoration: none; color: var(--text);
+  transition: border-color .2s, transform .15s; display: block;
+}
+.study-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+.study-card .icon { font-size: 28px; margin-bottom: 12px; display: block; }
+.study-card h3 { margin-bottom: 6px; }
+.study-card p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+
+.glance-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 16px; margin-bottom: 48px; }
+.glance-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+.glance-card .label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); font-family: 'JetBrains Mono', monospace; margin-bottom: 4px; }
+.glance-card .val { font-size: 20px; font-weight: 700; color: var(--blue); }
+.glance-card .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.flow { margin-bottom: 48px; }
+.flow-step {
+  display: flex; gap: 16px; margin-bottom: 0;
+  position: relative;
+}
+.flow-step:not(:last-child)::after {
+  content: ''; position: absolute; left: 17px; top: 36px; bottom: -16px;
+  width: 2px; background: var(--border);
+}
+.step-num {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; font-family: 'JetBrains Mono', monospace;
+  flex-shrink: 0; z-index: 1; border: 2px solid;
+}
+.step-body { padding-bottom: 24px; }
+.step-body .step-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.step-body .step-desc { font-size: 13px; color: var(--muted); }
+
+.fb { display:inline-block; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; padding:1px 7px; border-radius:4px; margin: 0 2px; }
+.fb-index   { background:var(--blue-dim);   color:var(--blue);   border:1px solid var(--blue); }
+.fb-room    { background:var(--green-dim);  color:var(--green);  border:1px solid var(--green); }
+.fb-tmdb    { background:var(--orange-dim); color:var(--orange); border:1px solid var(--orange); }
+.fb-db      { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple); }
+.fb-socket  { background:var(--cyan-dim);   color:var(--cyan);   border:1px solid var(--cyan); }
+.fb-app     { background:var(--red-dim);    color:var(--red);    border:1px solid var(--red); }
+.fb-home    { background:var(--yellow-dim); color:var(--yellow); border:1px solid var(--yellow); }
+.fb-roompage{ background:var(--blue-dim);   color:#79c0ff;       border:1px solid #79c0ff; }
+.fb-card    { background: #3a1020;          color:#ff7b72;       border:1px solid #ff7b72; }
+.fb-modal   { background:var(--purple-dim); color:var(--purple); border:1px solid var(--purple); }
+
+.terminal {
+  background: #010409; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; margin-bottom: 48px;
+}
+.terminal-bar { background: var(--surface); padding: 10px 16px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); }
+.dot { width: 12px; height: 12px; border-radius: 50%; }
+.dot-r { background: #ff5f56; } .dot-y { background: #ffbd2e; } .dot-g { background: #27c93f; }
+.terminal-bar span { font-size: 12px; color: var(--muted); margin-left: 8px; font-family: 'JetBrains Mono', monospace; }
+.terminal-body { padding: 20px 24px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; }
+.terminal-body .cmd { color: var(--green); }
+.terminal-body .cmt { color: var(--muted); }
+.terminal-body .out { color: var(--text); opacity: .7; }
+.terminal-body .warn { color: var(--orange); }
+.terminal-body .err { color: var(--red); }
+.terminal-body .prompt { color: var(--blue); margin-right: 8px; }
+
+table.ref { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 48px; }
+table.ref th { background: var(--surface2); color: var(--muted); text-align: left; padding: 10px 14px; font-size: 11px; text-transform: uppercase; letter-spacing: .6px; font-family: 'JetBrains Mono', monospace; border-bottom: 1px solid var(--border); }
+table.ref td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.ref tr:hover td { background: var(--surface2); }
+table.ref .fn-name { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--purple); }
+table.ref .fn-ret  { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--cyan); }
+
+@media (max-width: 768px) {
+  .card-grid, .glance-grid { grid-template-columns: 1fr; }
+  nav { gap: 12px; flex-wrap: wrap; }
+}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🎬 MovieMatch Study Kit</span>
+  <a href="code-walkthrough.html">Walkthrough</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="interview-prep.html">Interview Prep</a>
+  <a href="deep-dive-roommanager.html">Deep Dive</a>
+</nav>
+
+<div class="hero">
+  <h1>Movie<span>Match</span></h1>
+  <p>A real-time two-player movie swiping app — swipe together, decide together.</p>
+  <div class="badge-row">
+    <span class="badge badge-blue">React 18</span>
+    <span class="badge badge-green">Node.js + Express</span>
+    <span class="badge badge-orange">Socket.io</span>
+    <span class="badge badge-purple">TMDB API</span>
+    <span class="badge badge-cyan">Tailwind CSS</span>
+    <span class="badge badge-red">Vite</span>
+    <span class="badge badge-yellow">PostgreSQL (optional)</span>
+  </div>
+</div>
+
+<div class="container">
+
+  <!-- NAVIGATION CARDS -->
+  <h2>Study Pages</h2>
+  <div class="card-grid">
+    <a class="study-card" href="code-walkthrough.html">
+      <span class="icon">📖</span>
+      <h3>Code Walkthrough</h3>
+      <p>Every file, every function, every line — annotated with what it does, why it exists, and what it returns.</p>
+    </a>
+    <a class="study-card" href="architecture.html">
+      <span class="icon">🏗️</span>
+      <h3>Architecture</h3>
+      <p>Component map, data flow diagram, technology decisions, and the complete call graph from entry point to output.</p>
+    </a>
+    <a class="study-card" href="interview-prep.html">
+      <span class="icon">🎤</span>
+      <h3>Interview Prep</h3>
+      <p>15 likely interview questions with full answers. Walk-me-through scripts, gotcha code lines, and critical thinking Q&A.</p>
+    </a>
+    <a class="study-card" href="deep-dive-roommanager.html">
+      <span class="icon">🔬</span>
+      <h3>Deep Dive: roomManager.js</h3>
+      <p>The heart of the app — room lifecycle, match detection algorithm, the stale-closure trap, and every edge case.</p>
+    </a>
+  </div>
+
+  <!-- AT A GLANCE -->
+  <h2>Project at a Glance</h2>
+  <div class="glance-grid">
+    <div class="glance-card">
+      <div class="label">Source Files</div>
+      <div class="val">10</div>
+      <div class="sub">4 server + 6 client</div>
+    </div>
+    <div class="glance-card">
+      <div class="label">Runtime</div>
+      <div class="val" style="color:var(--green)">Node.js</div>
+      <div class="sub">ESM modules, no build step</div>
+    </div>
+    <div class="glance-card">
+      <div class="label">Real-time</div>
+      <div class="val" style="color:var(--orange)">Socket.io</div>
+      <div class="sub">WebSocket with polling fallback</div>
+    </div>
+    <div class="glance-card">
+      <div class="label">State</div>
+      <div class="val" style="color:var(--purple)">In-memory</div>
+      <div class="sub">Map + optional Postgres</div>
+    </div>
+    <div class="glance-card">
+      <div class="label">Movies / Room</div>
+      <div class="val" style="color:var(--cyan)">20</div>
+      <div class="sub">3 random TMDB pages shuffled</div>
+    </div>
+    <div class="glance-card">
+      <div class="label">Players / Room</div>
+      <div class="val" style="color:var(--yellow)">2</div>
+      <div class="sub">Hard-coded capacity limit</div>
+    </div>
+  </div>
+
+  <!-- RUNTIME FLOW -->
+  <h2>Runtime Flow — From Zero to Match</h2>
+  <div class="flow">
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--red);color:var(--red);background:var(--red-dim)">1</div>
+      <div class="step-body">
+        <div class="step-title">Browser loads → React mounts</div>
+        <div class="step-desc"><span class="fb fb-app">main.jsx</span> creates the React root, wraps in <code>BrowserRouter</code>. <span class="fb fb-app">App.jsx</span> routes <code>/</code> → Home, <code>/room/:roomId</code> → Room.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim)">2</div>
+      <div class="step-body">
+        <div class="step-title">Socket singleton created (not connected)</div>
+        <div class="step-desc"><span class="fb fb-socket">socket.js</span> creates the Socket.io client with <code>autoConnect: false</code>. Actual connection waits until Home's <code>useEffect</code> calls <code>socket.connect()</code>.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--yellow);color:var(--yellow);background:var(--yellow-dim)">3</div>
+      <div class="step-body">
+        <div class="step-title">Creator selects filters → emits create-room</div>
+        <div class="step-desc"><span class="fb fb-home">Home.jsx</span> builds a filter payload (genre, year range, runtime, rating, language, certification) and emits <code>create-room</code> to the server.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--orange);color:var(--orange);background:var(--orange-dim)">4</div>
+      <div class="step-body">
+        <div class="step-title">Server fetches 20 movies from TMDB</div>
+        <div class="step-desc"><span class="fb fb-index">index.js</span> calls <span class="fb fb-tmdb">tmdb.js</span> → builds Discover API URL → fetches 3 random pages in parallel via <code>Promise.all</code> → shuffles → returns top 20.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--green);color:var(--green);background:var(--green-dim)">5</div>
+      <div class="step-body">
+        <div class="step-title">Room created in memory</div>
+        <div class="step-desc"><span class="fb fb-room">roomManager.js</span> generates a 6-letter code (from unambiguous charset), stores the room in a <code>Map</code>, optionally persists to <span class="fb fb-db">db.js</span> Postgres.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--blue);color:var(--blue);background:var(--blue-dim)">6</div>
+      <div class="step-body">
+        <div class="step-title">Client navigates to /room/:roomId</div>
+        <div class="step-desc"><span class="fb fb-home">Home.jsx</span> receives <code>room-created</code>, saves movies to <code>sessionStorage</code>, and navigates. <span class="fb fb-roompage">Room.jsx</span> mounts and immediately emits <code>join-room</code> to register its socket.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--purple);color:var(--purple);background:var(--purple-dim)">7</div>
+      <div class="step-body">
+        <div class="step-title">Second player joins</div>
+        <div class="step-desc">Joiner enters the code or navigates to the URL. <span class="fb fb-index">index.js</span> calls <code>joinRoom()</code> → adds joiner to room → emits <code>partner-joined</code> to <strong>both</strong> sockets.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--cyan);color:var(--cyan);background:var(--cyan-dim)">8</div>
+      <div class="step-body">
+        <div class="step-title">Both players swipe → votes recorded server-side</div>
+        <div class="step-desc"><span class="fb fb-card">MovieCard.jsx</span> detects drag/flick gestures → calls <code>onVote(liked)</code> → <span class="fb fb-roompage">Room.jsx</span> emits <code>vote</code> → <span class="fb fb-room">roomManager.js</span> records it and checks for mutual like.</div>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num" style="border-color:var(--green);color:var(--green);background:var(--green-dim)">9</div>
+      <div class="step-body">
+        <div class="step-title">Both players finish → matches revealed</div>
+        <div class="step-desc">When each player swipes the last card, they emit <code>player-done</code>. When <strong>both</strong> are done, <span class="fb fb-room">roomManager.js</span> returns the accumulated matches array, and <code>all-done</code> is broadcast to the room.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- HOW TO RUN -->
+  <h2>How to Run Locally</h2>
+  <div class="terminal">
+    <div class="terminal-bar">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <span>Terminal — setup & run</span>
+    </div>
+    <div class="terminal-body">
+      <div><span class="cmt"># Prerequisites: Node.js 18+, free TMDB API key from themoviedb.org</span></div>
+      <div>&nbsp;</div>
+      <div><span class="prompt">$</span><span class="cmd">git clone https://github.com/shaiaviv/movie-match.git</span></div>
+      <div><span class="prompt">$</span><span class="cmd">cd movie-match</span></div>
+      <div>&nbsp;</div>
+      <div><span class="cmt"># Create the environment file</span></div>
+      <div><span class="prompt">$</span><span class="cmd">echo "TMDB_API_KEY=your_key_here" > server/.env</span></div>
+      <div>&nbsp;</div>
+      <div><span class="cmt"># Install all dependencies (root + server + client)</span></div>
+      <div><span class="prompt">$</span><span class="cmd">npm install</span></div>
+      <div><span class="prompt">$</span><span class="cmd">npm install --prefix server</span></div>
+      <div><span class="prompt">$</span><span class="cmd">npm install --prefix client</span></div>
+      <div>&nbsp;</div>
+      <div><span class="cmt"># Start both servers with one command</span></div>
+      <div><span class="prompt">$</span><span class="cmd">npm run dev</span></div>
+      <div>&nbsp;</div>
+      <div><span class="out">[server] MovieMatch server running on http://localhost:3001</span></div>
+      <div><span class="out">[client]   VITE v5.x.x  ready in 234 ms</span></div>
+      <div><span class="out">[client]   ➜  Local:   http://localhost:5173/</span></div>
+      <div>&nbsp;</div>
+      <div><span class="cmt"># Open two tabs to test the two-player experience</span></div>
+      <div><span class="cmt"># Tab 1: Create a room. Tab 2: Enter the code to join.</span></div>
+      <div>&nbsp;</div>
+      <div><span class="warn"># Common errors:</span></div>
+      <div><span class="warn"># ⚠  TMDB_API_KEY not set  →  create server/.env with your key</span></div>
+      <div><span class="err"># Error: Cannot find module 'socket.io'  →  run npm install --prefix server</span></div>
+    </div>
+  </div>
+
+  <!-- QUICK REFERENCE TABLE -->
+  <h2>Quick Function Reference</h2>
+  <table class="ref">
+    <thead>
+      <tr>
+        <th>Function</th>
+        <th>File</th>
+        <th>What it does</th>
+        <th>Returns</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="fn-name">generateCode()</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Picks 6 random chars from unambiguous charset. Recursive if code exists.</td>
+        <td class="fn-ret">string (6 chars)</td>
+      </tr>
+      <tr>
+        <td class="fn-name">createRoom(socketId, movies)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Generates code, initialises room object in Map, optionally persists to DB.</td>
+        <td class="fn-ret">Promise&lt;string&gt; (roomId)</td>
+      </tr>
+      <tr>
+        <td class="fn-name">joinRoom(code, socketId)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Finds room (memory then DB). Validates capacity. Adds joiner.</td>
+        <td class="fn-ret">Promise&lt;{room} | {error}&gt;</td>
+      </tr>
+      <tr>
+        <td class="fn-name">getRoom(code)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Simple Map lookup by room code.</td>
+        <td class="fn-ret">room | null</td>
+      </tr>
+      <tr>
+        <td class="fn-name">getRoomBySocket(socketId)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Linear scan of all rooms to find one containing a given socket ID.</td>
+        <td class="fn-ret">room | null</td>
+      </tr>
+      <tr>
+        <td class="fn-name">recordVote(roomId, socketId, movieId, liked)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Stores vote. If liked AND other player already liked → pushes to matches.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+      <tr>
+        <td class="fn-name">markDone(roomId, socketId)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Adds player to done Set. Returns matches only when ALL players are done.</td>
+        <td class="fn-ret">matches[] | null</td>
+      </tr>
+      <tr>
+        <td class="fn-name">removeUser(socketId)</td>
+        <td><span class="fb fb-room">roomManager.js</span></td>
+        <td>Removes socket from room. Schedules 2hr TTL cleanup if room empty.</td>
+        <td class="fn-ret">room | null</td>
+      </tr>
+      <tr>
+        <td class="fn-name">shuffle(arr)</td>
+        <td><span class="fb fb-tmdb">tmdb.js</span></td>
+        <td>Fisher-Yates in-place shuffle. Ensures random movie order per room.</td>
+        <td class="fn-ret">arr (mutated)</td>
+      </tr>
+      <tr>
+        <td class="fn-name">randomPages(count, max)</td>
+        <td><span class="fb fb-tmdb">tmdb.js</span></td>
+        <td>Picks <code>count</code> unique random page numbers 1..max using a Set.</td>
+        <td class="fn-ret">number[]</td>
+      </tr>
+      <tr>
+        <td class="fn-name">formatMovies(results)</td>
+        <td><span class="fb fb-tmdb">tmdb.js</span></td>
+        <td>Filters out incomplete entries, maps TMDB fields to app shape.</td>
+        <td class="fn-ret">movie[]</td>
+      </tr>
+      <tr>
+        <td class="fn-name">fetchMovies(apiKey, genreId, opts)</td>
+        <td><span class="fb fb-tmdb">tmdb.js</span></td>
+        <td>Builds TMDB Discover URL, fetches 3 pages in parallel, shuffles, returns 20.</td>
+        <td class="fn-ret">Promise&lt;movie[]&gt;</td>
+      </tr>
+      <tr>
+        <td class="fn-name">initSchema()</td>
+        <td><span class="fb fb-db">db.js</span></td>
+        <td>Creates <code>rooms</code> table if it doesn't exist. No-op if no DATABASE_URL.</td>
+        <td class="fn-ret">Promise&lt;void&gt;</td>
+      </tr>
+      <tr>
+        <td class="fn-name">handleCreate()</td>
+        <td><span class="fb fb-home">Home.jsx</span></td>
+        <td>Reads filter state, emits <code>create-room</code> with undefined-cleaned payload.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+      <tr>
+        <td class="fn-name">handleJoin(e)</td>
+        <td><span class="fb fb-home">Home.jsx</span></td>
+        <td>Normalises input (accepts full URL or code), emits <code>join-room</code>.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+      <tr>
+        <td class="fn-name">handleVote(liked)</td>
+        <td><span class="fb fb-roompage">Room.jsx</span></td>
+        <td>Emits vote, advances card index, emits player-done on last card.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+      <tr>
+        <td class="fn-name">triggerExit(liked)</td>
+        <td><span class="fb fb-card">MovieCard.jsx</span></td>
+        <td>Guards against double-trigger, sets exit animation, calls onVote after 350ms.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+      <tr>
+        <td class="fn-name">finish(endX, elapsed)</td>
+        <td><span class="fb fb-card">MovieCard.jsx</span></td>
+        <td>Evaluates if drag was long enough or fast enough to count as a swipe.</td>
+        <td class="fn-ret">void</td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

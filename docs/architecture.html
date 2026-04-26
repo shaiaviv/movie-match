@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architecture — MovieMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--green:#3fb950;--green-dim:#1a3a20;--blue:#58a6ff;--blue-dim:#0d2a4a;--orange:#d29922;--orange-dim:#3a2a00;--purple:#bc8cff;--purple-dim:#2d1f4a;--red:#f85149;--red-dim:#3a1010;--yellow:#e3b341;--yellow-dim:#3a2e00;--cyan:#39c5cf;--cyan-dim:#0d3038}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;line-height:1.6}
+nav{position:sticky;top:0;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:11px 20px;z-index:100;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;font-size:12px;transition:color .15s}nav a:hover{color:var(--text)}
+nav .logo{color:var(--text);font-weight:700;font-size:14px;margin-right:6px}.cur{color:var(--blue)}
+.container{max-width:980px;margin:0 auto;padding:40px 20px}
+h2{font-size:20px;font-weight:700;margin:40px 0 16px;color:var(--text)}h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:8px}
+p{color:var(--muted);font-size:14px;line-height:1.7;margin-bottom:12px}
+.section{margin-bottom:48px}
+
+/* Component map */
+.cmap{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:32px}
+.ccard{background:var(--surface);border:1px solid;border-radius:10px;padding:18px;border-left:4px solid}
+.ccard h3{font-size:13px;font-family:'JetBrains Mono',monospace}
+.ccard .meta{font-size:11px;color:var(--muted);margin:6px 0;font-family:'JetBrains Mono',monospace}
+.ccard ul{margin:8px 0 0 16px;font-size:12px;color:var(--muted);line-height:1.8}
+.ccard ul li span{color:var(--text)}
+
+/* Data flow */
+.flow-card{
+  border:1px solid var(--border);border-radius:8px;background:var(--surface);
+  padding:14px 18px;margin-bottom:0;position:relative;
+  border-left:4px solid
+}
+.flow-card .step-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;font-family:'JetBrains Mono',monospace;margin-bottom:4px}
+.flow-card .step-main{font-size:13px;font-weight:600;color:var(--text)}
+.flow-card .step-sub{font-size:12px;color:var(--muted);margin-top:3px}
+.flow-card .step-ret{font-size:11px;font-family:'JetBrains Mono',monospace;margin-top:5px;padding:4px 8px;background:var(--surface2);border-radius:4px;display:inline-block}
+
+.arrow{text-align:center;padding:8px 0;color:var(--muted);font-size:16px}
+.arrow span{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--muted);margin-left:8px}
+
+/* Tech decision cards */
+.tech-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:32px}
+.tech-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px}
+.tech-card .tech-name{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;margin-bottom:6px}
+.tech-card .tech-why{font-size:12px;color:var(--muted);line-height:1.6}
+.tech-card .tech-alt{font-size:11px;margin-top:8px;padding:6px 10px;background:var(--surface2);border-radius:4px;border-left:3px solid var(--orange);color:var(--muted)}
+
+/* Limitation items */
+.limit{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);font-size:13px}
+.limit-icon{font-size:16px;flex-shrink:0;margin-top:2px}
+.limit-title{font-weight:600;color:var(--text);margin-bottom:2px}
+.limit-desc{color:var(--muted);font-size:12px}
+
+/* File color badges */
+.fb{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;margin:0 2px}
+.fb-index{background:var(--blue-dim);color:var(--blue);border:1px solid var(--blue)}
+.fb-room{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+.fb-tmdb{background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)}
+.fb-db{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple)}
+.fb-socket{background:var(--cyan-dim);color:var(--cyan);border:1px solid var(--cyan)}
+.fb-home{background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow)}
+.fb-roompage{background:var(--blue-dim);color:#79c0ff;border:1px solid #79c0ff}
+.fb-card{background:#3a1020;color:#ff7b72;border:1px solid #ff7b72}
+
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--purple)}
+
+/* Socket event table */
+table.ev{width:100%;border-collapse:collapse;font-size:13px;margin-bottom:32px}
+table.ev th{background:var(--surface2);color:var(--muted);text-align:left;padding:8px 12px;font-size:11px;text-transform:uppercase;letter-spacing:.5px;font-family:'JetBrains Mono',monospace;border-bottom:1px solid var(--border)}
+table.ev td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+table.ev tr:hover td{background:var(--surface2)}
+.dir-cs{color:var(--green);font-size:11px;font-family:'JetBrains Mono',monospace}
+.dir-sc{color:var(--blue);font-size:11px;font-family:'JetBrains Mono',monospace}
+.ev-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700}
+
+@media(max-width:768px){.cmap,.tech-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🎬 MovieMatch</span>
+  <a href="index.html">← Hub</a>
+  <a href="code-walkthrough.html">Walkthrough</a>
+  <a href="#" class="cur">Architecture</a>
+  <a href="interview-prep.html">Interview</a>
+  <a href="deep-dive-roommanager.html">Deep Dive</a>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+    <a href="#cmap">Components</a> ·
+    <a href="#flow">Call Graph</a> ·
+    <a href="#tech">Tech</a> ·
+    <a href="#limits">Limits</a>
+  </span>
+</nav>
+<div class="container">
+
+<h2 style="margin-top:8px">Architecture Overview</h2>
+<p>MovieMatch solves a two-sided coordination problem: two people who want to watch a movie together, but can't agree on one. The design philosophy is <strong>zero infrastructure</strong> — no accounts, no database required, no long-lived state. Two people create a temporary room, swipe through the same movies in real time, and the server only needs to survive long enough for one session.</p>
+<p>The architecture separates into three clear layers: <strong>transport</strong> (Socket.io handles all real-time communication), <strong>state</strong> (roomManager.js owns all mutable room data), and <strong>presentation</strong> (React components handle all UI rendering with no shared global state library).</p>
+
+<!-- COMPONENT MAP -->
+<div class="section" id="cmap">
+<h2>Component Map</h2>
+<div class="cmap">
+  <div class="ccard" style="border-color:var(--blue)">
+    <h3>server/index.js</h3>
+    <div class="meta">Entry point · Express + Socket.io</div>
+    <ul>
+      <li><span>Owns:</span> HTTP server, socket event handlers, health endpoint</li>
+      <li><span>Imports:</span> fetchMovies (tmdb.js), all room functions (roomManager.js), initSchema (db.js)</li>
+      <li><span>Exports:</span> nothing (entry point)</li>
+      <li><span>Called by:</span> Node.js runtime directly</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:var(--green)">
+    <h3>server/roomManager.js</h3>
+    <div class="meta">Business logic · Pure functions</div>
+    <ul>
+      <li><span>Owns:</span> rooms Map (all room state), all vote/match logic</li>
+      <li><span>Imports:</span> pool from db.js</li>
+      <li><span>Exports:</span> createRoom, joinRoom, getRoom, getRoomBySocket, recordVote, markDone, removeUser</li>
+      <li><span>Called by:</span> index.js socket handlers</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:var(--orange)">
+    <h3>server/tmdb.js</h3>
+    <div class="meta">External API · Side effects</div>
+    <ul>
+      <li><span>Owns:</span> TMDB URL building, page fetching, movie formatting</li>
+      <li><span>Imports:</span> node-fetch</li>
+      <li><span>Exports:</span> fetchMovies (used only by index.js)</li>
+      <li><span>Called by:</span> index.js on create-room event</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:var(--purple)">
+    <h3>server/db.js</h3>
+    <div class="meta">Optional persistence · Postgres</div>
+    <ul>
+      <li><span>Owns:</span> pg.Pool, schema creation</li>
+      <li><span>Imports:</span> pg (node-postgres)</li>
+      <li><span>Exports:</span> pool (null if no DATABASE_URL), initSchema</li>
+      <li><span>Called by:</span> roomManager.js (pool), index.js (initSchema)</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:var(--cyan)">
+    <h3>client/src/socket.js</h3>
+    <div class="meta">Singleton · WebSocket client</div>
+    <ul>
+      <li><span>Owns:</span> the Socket.io client instance</li>
+      <li><span>Imports:</span> socket.io-client</li>
+      <li><span>Exports:</span> single socket instance (default)</li>
+      <li><span>Used by:</span> Home.jsx and Room.jsx</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:var(--yellow)">
+    <h3>client/src/pages/Home.jsx</h3>
+    <div class="meta">Page · Filters + Room creation</div>
+    <ul>
+      <li><span>Owns:</span> all filter state, mode state, YearRangeSlider, Pills, CinemaParticles sub-components</li>
+      <li><span>Emits:</span> create-room, join-room</li>
+      <li><span>Listens:</span> room-created, room-joined, error</li>
+      <li><span>Navigates to:</span> /room/:roomId on success</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:#79c0ff">
+    <h3>client/src/pages/Room.jsx</h3>
+    <div class="meta">Page · Swiping screen</div>
+    <ul>
+      <li><span>Owns:</span> game state (index, voted, localDone, done, matches)</li>
+      <li><span>Emits:</span> join-room, vote, player-done</li>
+      <li><span>Listens:</span> room-joined, partner-joined, all-done, partner-disconnected, error</li>
+      <li><span>Renders:</span> MovieCard, results screen</li>
+    </ul>
+  </div>
+  <div class="ccard" style="border-color:#ff7b72">
+    <h3>client/src/components/MovieCard.jsx</h3>
+    <div class="meta">Component · Touch/mouse gestures</div>
+    <ul>
+      <li><span>Owns:</span> drag state, animation state, event listeners</li>
+      <li><span>Props:</span> movie, onVote, voted, nextMovies</li>
+      <li><span>Calls:</span> onVote(liked) after animation</li>
+      <li><span>Used by:</span> Room.jsx</li>
+    </ul>
+  </div>
+</div>
+</div>
+
+<!-- SOCKET EVENTS -->
+<div class="section">
+<h2>Socket Event Reference</h2>
+<table class="ev">
+  <thead>
+    <tr><th>Event</th><th>Direction</th><th>Payload</th><th>Description</th></tr>
+  </thead>
+  <tbody>
+    <tr><td class="ev-name">create-room</td><td class="dir-cs">client → server</td><td><code>{ genreId, yearFrom, yearTo, minRating, runtimeMin, runtimeMax, language, certification }</code></td><td>Trigger room creation with filter params</td></tr>
+    <tr><td class="ev-name">room-created</td><td class="dir-sc">server → client</td><td><code>{ roomId, movies[] }</code></td><td>Response to creator with 6-letter code and movie list</td></tr>
+    <tr><td class="ev-name">join-room</td><td class="dir-cs">client → server</td><td><code>"ABCDEF"</code> (string code)</td><td>Join by code. Also emitted by Room.jsx on mount for reconnect handling</td></tr>
+    <tr><td class="ev-name">room-joined</td><td class="dir-sc">server → client</td><td><code>{ roomId, movies[] }</code></td><td>Response to joiner (and creator on reconnect)</td></tr>
+    <tr><td class="ev-name">partner-joined</td><td class="dir-sc">server → both</td><td>none</td><td>Both players get this when the second player joins</td></tr>
+    <tr><td class="ev-name">vote</td><td class="dir-cs">client → server</td><td><code>{ roomId, movieId, liked }</code></td><td>One player's swipe result. Server records and checks for match</td></tr>
+    <tr><td class="ev-name">player-done</td><td class="dir-cs">client → server</td><td><code>"ABCDEF"</code> (roomId)</td><td>Player finished all 20 movies. Server waits for both</td></tr>
+    <tr><td class="ev-name">all-done</td><td class="dir-sc">server → both</td><td><code>movie[]</code> (matches array)</td><td>Both done — broadcast accumulated matches to both players</td></tr>
+    <tr><td class="ev-name">partner-disconnected</td><td class="dir-sc">server → remaining</td><td>none</td><td>Other player's socket disconnected. Shows warning banner</td></tr>
+    <tr><td class="ev-name">error</td><td class="dir-sc">server → client</td><td>string message</td><td>Room not found, full, or TMDB failure</td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- CALL GRAPH / DATA FLOW -->
+<div class="section" id="flow">
+<h2>Complete Call Graph — create-room to all-done</h2>
+
+<div class="flow-card" style="border-left-color:var(--yellow)">
+  <div class="step-label" style="color:var(--yellow)"><span class="fb fb-home">Home.jsx</span> handleCreate()</div>
+  <div class="step-main">User clicks "Start" → emits create-room</div>
+  <div class="step-sub">Payload: <code>{ genreId, yearFrom, yearTo, minRating, runtimeMin, runtimeMax, language, certification }</code> — undefined values omitted from JSON</div>
+  <div class="step-ret">→ No response yet. Socket registered. UI shows "Finding films…"</div>
+</div>
+<div class="arrow">↓ <span>socket.emit('create-room', payload)</span></div>
+
+<div class="flow-card" style="border-left-color:var(--blue)">
+  <div class="step-label" style="color:var(--blue)"><span class="fb fb-index">index.js</span> on('create-room')</div>
+  <div class="step-main">Validates TMDB_API_KEY, then calls fetchMovies()</div>
+  <div class="step-sub">TMDB_API_KEY guard fires first. If missing, emits error and returns.</div>
+  <div class="step-ret">→ Calls fetchMovies(apiKey, genreId, opts) in tmdb.js</div>
+</div>
+<div class="arrow">↓ <span>await fetchMovies(apiKey, genreId, { yearFrom, ... })</span></div>
+
+<div class="flow-card" style="border-left-color:var(--orange)">
+  <div class="step-label" style="color:var(--orange)"><span class="fb fb-tmdb">tmdb.js</span> fetchMovies()</div>
+  <div class="step-main">Picks 3 random pages → builds TMDB Discover URL → fetches all 3 in parallel</div>
+  <div class="step-sub">Promise.all([fetch(page1), fetch(page2), fetch(page3)]) — fires simultaneously, ~200-400ms total</div>
+  <div class="step-ret">→ Returns movie[] (20 shuffled, formatted movies)</div>
+</div>
+<div class="arrow">↓ <span>movies: array of 20 movie objects returned to index.js</span></div>
+
+<div class="flow-card" style="border-left-color:var(--green)">
+  <div class="step-label" style="color:var(--green)"><span class="fb fb-room">roomManager.js</span> createRoom(socketId, movies)</div>
+  <div class="step-main">Generates 6-char code → stores room in Map → optionally writes to Postgres</div>
+  <div class="step-sub">Room structure: <code>{ id, users:[socketId], movies, votes:{ socketId:{} }, matches:[], done:Set() }</code></div>
+  <div class="step-ret">→ Returns roomId string (e.g. "ABCDEF")</div>
+</div>
+<div class="arrow">↓ <span>socket.join(roomId) + socket.emit('room-created', { roomId, movies })</span></div>
+
+<div class="flow-card" style="border-left-color:var(--yellow)">
+  <div class="step-label" style="color:var(--yellow)"><span class="fb fb-home">Home.jsx</span> on('room-created')</div>
+  <div class="step-main">Saves movies to sessionStorage → navigate('/room/ABCDEF')</div>
+  <div class="step-sub">sessionStorage key 'movies' = JSON.stringify(movies). Survives page refresh.</div>
+  <div class="step-ret">→ React Router navigates to Room.jsx</div>
+</div>
+<div class="arrow">↓ <span>React Router renders Room.jsx with :roomId = "ABCDEF"</span></div>
+
+<div class="flow-card" style="border-left-color:#79c0ff">
+  <div class="step-label" style="color:#79c0ff"><span class="fb fb-roompage">Room.jsx</span> useEffect (mount)</div>
+  <div class="step-main">Connects socket if needed → emits join-room for registration → registers all socket listeners</div>
+  <div class="step-sub">Always emits join-room, even for the creator — ensures socket is registered with the room for votes</div>
+  <div class="step-ret">→ Server calls joinRoom() which finds creator already in room (idempotent), returns room</div>
+</div>
+<div class="arrow">↓ <span>Second player joins via URL or code share</span></div>
+
+<div class="flow-card" style="border-left-color:var(--green)">
+  <div class="step-label" style="color:var(--green)"><span class="fb fb-room">roomManager.js</span> joinRoom(code, socketId)</div>
+  <div class="step-main">Finds room → validates capacity → adds joiner to users + votes</div>
+  <div class="step-sub">Also handles DB fallback: if room not in memory (server restart), queries Postgres</div>
+  <div class="step-ret">→ Returns { room } on success, { error } on failure</div>
+</div>
+<div class="arrow">↓ <span>socket.to(room.id).emit('partner-joined') + socket.emit('partner-joined')</span></div>
+
+<div class="flow-card" style="border-left-color:#ff7b72">
+  <div class="step-label" style="color:#ff7b72"><span class="fb fb-card">MovieCard.jsx</span> touch/mouse events → finish()</div>
+  <div class="step-main">Detects drag end → computes delta and velocity → triggers exit or spring-back</div>
+  <div class="step-sub">Exit: setIsExiting(true), setDragX(±600) → setTimeout 350ms → calls onVote(liked)</div>
+  <div class="step-ret">→ Calls onVote(liked) which is handleVote in Room.jsx</div>
+</div>
+<div class="arrow">↓ <span>onVote(liked) → handleVote(liked) in Room.jsx</span></div>
+
+<div class="flow-card" style="border-left-color:#79c0ff">
+  <div class="step-label" style="color:#79c0ff"><span class="fb fb-roompage">Room.jsx</span> handleVote(liked)</div>
+  <div class="step-main">Emits vote → advances index (or marks localDone if last movie)</div>
+  <div class="step-sub">If last movie: setLocalDone(true) + socket.emit('player-done', roomId)</div>
+  <div class="step-ret">→ socket.emit('vote', { roomId, movieId, liked })</div>
+</div>
+<div class="arrow">↓ <span>socket.emit('vote', { roomId, movieId: 550, liked: true })</span></div>
+
+<div class="flow-card" style="border-left-color:var(--green)">
+  <div class="step-label" style="color:var(--green)"><span class="fb fb-room">roomManager.js</span> recordVote()</div>
+  <div class="step-main">Stores vote → if liked, checks if other player also liked → pushes to matches if so</div>
+  <div class="step-sub">Match detection logic: <code>votes[other]?.[movieId] === true</code>. Both must have liked it.</div>
+  <div class="step-ret">→ void. Matches accumulate in room.matches[]</div>
+</div>
+<div class="arrow">↓ <span>When both players finish: socket.emit('player-done') from each player</span></div>
+
+<div class="flow-card" style="border-left-color:var(--green)">
+  <div class="step-label" style="color:var(--green)"><span class="fb fb-room">roomManager.js</span> markDone()</div>
+  <div class="step-main">Adds player to done Set → checks if all users are done → returns matches or null</div>
+  <div class="step-sub"><code>room.users.every(id => room.done.has(id))</code> — true only when ALL players done</div>
+  <div class="step-ret">→ room.matches[] when all done, null while waiting</div>
+</div>
+<div class="arrow">↓ <span>if (matches !== null): io.to(roomId).emit('all-done', matches)</span></div>
+
+<div class="flow-card" style="border-left-color:#79c0ff">
+  <div class="step-label" style="color:#79c0ff"><span class="fb fb-roompage">Room.jsx</span> on('all-done')</div>
+  <div class="step-main">setMatches(m) + setDone(true) → renders results screen with match list</div>
+  <div class="step-sub">Both players receive this simultaneously. UI shows matched movies or "no matches".</div>
+  <div class="step-ret">→ Final state. User can "Start Over" → clears sessionStorage, navigates to /</div>
+</div>
+
+</div>
+
+<!-- TECHNOLOGY DECISIONS -->
+<div class="section" id="tech">
+<h2>Technology Decisions</h2>
+<div class="tech-grid">
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--orange)">Socket.io</div>
+    <div class="tech-why">Real-time bidirectional events between server and clients. Automatically falls back to HTTP long-polling if WebSockets aren't available. The room-based broadcasting (io.to(roomId)) makes multi-player sync trivial.</div>
+    <div class="tech-alt">Alternative: Native WebSocket API. Pros: no dependency, smaller bundle. Cons: no built-in rooms, no reconnection logic, no fallback — everything has to be built manually.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--blue)">React 18 + Vite</div>
+    <div class="tech-why">React for component-based UI with hooks. Vite for near-instant HMR in dev and optimized ES module builds. No Next.js needed — this is a pure client-side SPA.</div>
+    <div class="tech-alt">Alternative: Next.js. Unnecessary overhead — no SSR needed, no API routes (Socket.io runs separately), no RSC benefits here.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--green)">In-memory Map (rooms)</div>
+    <div class="tech-why">Zero setup, O(1) lookup, naturally scoped to the process lifetime. Rooms are ephemeral by design — they don't need to outlive the server process.</div>
+    <div class="tech-alt">Alternative: Redis. Would enable horizontal scaling (multiple server instances) but adds significant operational complexity for a single-server app.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--cyan)">Tailwind CSS</div>
+    <div class="tech-why">Utility-first CSS — all styles colocated with markup. Custom design system (noir/gold/crimson/cream palettes) defined in tailwind.config.js. No CSS file to maintain per component.</div>
+    <div class="tech-alt">Alternative: CSS Modules or styled-components. More isolation but more files. Tailwind's JIT purges unused styles so final bundle is small.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--purple)">TMDB Discover API</div>
+    <div class="tech-why">Free, requires only a free account API key. Supports all needed filters (genre, year, runtime, language, certification) in a single URL. Returns popularity-sorted results.</div>
+    <div class="tech-alt">Alternative: JustWatch API, OMDb, Letterboxd scraping. TMDB has the most comprehensive filter support for free.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--yellow)">sessionStorage</div>
+    <div class="tech-why">Stores movies and roomId so they survive page refresh within the same tab. Automatically cleared when the tab closes — no stale data left behind. Scoped per tab (two tabs = two sessions).</div>
+    <div class="tech-alt">Alternative: localStorage (persists across sessions — bad, could join wrong room) or React state only (lost on refresh — bad).</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--red)">Railway (backend)</div>
+    <div class="tech-why">nixpacks.toml auto-detects Node.js and runs npm start. Zero Docker needed. Provides persistent Postgres via DATABASE_URL. Auto-deploys from GitHub.</div>
+    <div class="tech-alt">Alternative: Fly.io, Render. Railway was chosen for simplicity and the nixpacks zero-config deployment.</div>
+  </div>
+  <div class="tech-card">
+    <div class="tech-name" style="color:var(--blue)">node-fetch</div>
+    <div class="tech-why">Used in tmdb.js for HTTP requests to TMDB. Node.js 18+ has native fetch, but older versions don't. The package is a polyfill that works across all versions.</div>
+    <div class="tech-alt">Alternative: Native fetch (Node 18+), axios. node-fetch is minimal and API-compatible with browser fetch.</div>
+  </div>
+</div>
+</div>
+
+<!-- DESIGN PATTERNS -->
+<div class="section">
+<h2>Design Patterns Used</h2>
+<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px">
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--cyan);margin-bottom:6px">Module Singleton</h3>
+    <p style="margin:0">socket.js exports one shared socket instance. ES module caching ensures every import gets the same object.</p>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--green);margin-bottom:6px">Null Object (Optional DB)</h3>
+    <p style="margin:0">pool = null when no DATABASE_URL. All callers check <code>if (pool)</code>. App degrades to in-memory without any code changes.</p>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--orange);margin-bottom:6px">Error as Value</h3>
+    <p style="margin:0">joinRoom() returns <code>{ error }</code> instead of throwing. Caller checks <code>result.error</code>. Server stays up even on bad input.</p>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--purple);margin-bottom:6px">Ref Forwarding (Stale Closure Fix)</h3>
+    <p style="margin:0">MovieCard uses <code>useRef</code> for <code>voted</code> and <code>onVote</code> so event listeners always access current values without re-registering.</p>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--yellow);margin-bottom:6px">Lazy State Initializer</h3>
+    <p style="margin:0">Room.jsx uses <code>useState(() => JSON.parse(...))</code> — function form runs once on mount, not on every render. Avoids repeated sessionStorage reads.</p>
+  </div>
+  <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:18px">
+    <h3 style="color:var(--red);margin-bottom:6px">Deterministic Generation</h3>
+    <p style="margin:0">MatchModal's CONFETTI array is computed at module load with index-based math instead of Math.random() — stable across re-renders and StrictMode double-calls.</p>
+  </div>
+</div>
+</div>
+
+<!-- LIMITATIONS -->
+<div class="section" id="limits">
+<h2>Known Limitations</h2>
+<div class="limit">
+  <div class="limit-icon">⚡</div>
+  <div>
+    <div class="limit-title">Server restart loses all rooms</div>
+    <div class="limit-desc">The in-memory Map is wiped on restart. Postgres only stores movies, not votes — so players mid-game lose their progress. DATABASE_URL mitigates the "can't join" problem but not mid-session state loss.</div>
+  </div>
+</div>
+<div class="limit">
+  <div class="limit-icon">👥</div>
+  <div>
+    <div class="limit-title">Hard 2-player limit</div>
+    <div class="limit-desc">The room capacity is hard-coded to 2. Expanding to groups would require rethinking match detection (unanimous? majority?) and the done-tracking logic.</div>
+  </div>
+</div>
+<div class="limit">
+  <div class="limit-icon">🎬</div>
+  <div>
+    <div class="limit-title">Fixed 20-movie pool</div>
+    <div class="limit-desc">Movies are fetched once per room and don't change. If both players swipe through all 20 with few matches, they can't request more without creating a new room.</div>
+  </div>
+</div>
+<div class="limit">
+  <div class="limit-icon">🔒</div>
+  <div>
+    <div class="limit-title">No authentication</div>
+    <div class="limit-desc">Anyone with the room code can join. Rooms only support 2 players so the third person gets an error, but the first person to join with the code wins the slot.</div>
+  </div>
+</div>
+<div class="limit">
+  <div class="limit-icon">📈</div>
+  <div>
+    <div class="limit-title">Linear scan for disconnect lookup</div>
+    <div class="limit-desc">getRoomBySocket() iterates all rooms to find one by socket ID. With thousands of concurrent rooms, this O(n) scan becomes a bottleneck. Fix: maintain a reverse Map (socketId → roomId).</div>
+  </div>
+</div>
+<div class="limit">
+  <div class="limit-icon">🌐</div>
+  <div>
+    <div class="limit-title">Single-server architecture</div>
+    <div class="limit-desc">Two players must connect to the same server instance. Load-balanced multi-server deployment would break room synchronization (rooms are in-memory per process). Fix: shared state via Redis + Socket.io Redis adapter.</div>
+  </div>
+</div>
+</div>
+
+</div>
+</body>
+</html>

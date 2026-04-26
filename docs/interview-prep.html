@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Prep — MovieMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0d1117;--surface:#161b22;--surface2:#1c2128;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--green:#3fb950;--green-dim:#1a3a20;--blue:#58a6ff;--blue-dim:#0d2a4a;--orange:#d29922;--orange-dim:#3a2a00;--purple:#bc8cff;--purple-dim:#2d1f4a;--red:#f85149;--red-dim:#3a1010;--yellow:#e3b341;--yellow-dim:#3a2e00;--cyan:#39c5cf;--cyan-dim:#0d3038}
+*{box-sizing:border-box;margin:0;padding:0}body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;line-height:1.6}
+nav{position:sticky;top:0;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:11px 20px;z-index:100;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;font-size:12px}nav a:hover{color:var(--text)}.cur{color:var(--blue)}
+nav .logo{color:var(--text);font-weight:700;font-size:14px;margin-right:6px}
+.container{max-width:820px;margin:0 auto;padding:40px 20px}
+h2{font-size:20px;font-weight:700;margin:40px 0 16px;color:var(--text);padding-bottom:8px;border-bottom:1px solid var(--border)}
+h2:first-child{margin-top:8px}
+.section-intro{color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.7}
+
+/* Q&A Cards */
+details{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  margin-bottom:12px;overflow:hidden;
+}
+details[open]{border-color:var(--green)}
+summary{
+  cursor:pointer;padding:16px 20px;list-style:none;
+  display:flex;align-items:flex-start;gap:12px;user-select:none;
+}
+summary::-webkit-details-marker{display:none}
+.q-label{
+  font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;
+  color:var(--green);font-family:'JetBrains Mono',monospace;
+  border:1px solid var(--green);border-radius:4px;padding:2px 7px;
+  flex-shrink:0;margin-top:2px;background:var(--green-dim);
+}
+summary .q-text{font-size:14px;font-weight:600;color:var(--text);line-height:1.5}
+.q-arrow{margin-left:auto;color:var(--muted);font-size:12px;flex-shrink:0;margin-top:3px;transition:transform .2s}
+details[open] .q-arrow{transform:rotate(90deg)}
+.answer{
+  padding:0 20px 18px 20px;border-top:1px solid var(--border);
+  font-size:14px;color:var(--muted);line-height:1.75;
+}
+.answer p{margin-top:12px}
+.answer p:first-child{margin-top:12px}
+.answer strong{color:var(--text)}
+.answer ul{margin:10px 0 0 20px}
+.answer li{margin-bottom:6px}
+.answer .tldr{
+  margin-top:12px;padding:10px 14px;background:var(--green-dim);border-left:3px solid var(--green);
+  border-radius:6px;font-size:13px;color:var(--text);
+}
+.answer .tldr strong{color:var(--green)}
+
+/* Walkthrough block */
+.walkthrough{
+  background:var(--surface);border:1px solid var(--blue);border-radius:10px;
+  padding:24px;margin-bottom:20px
+}
+.walkthrough p{font-size:14px;color:var(--muted);line-height:1.85;margin-bottom:12px}
+.walkthrough p:last-child{margin-bottom:0}
+.walkthrough strong{color:var(--text)}
+
+/* Code gotcha */
+.gotcha{background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:12px;overflow:hidden}
+.gotcha-code{padding:14px 18px;background:#010409;font-family:'JetBrains Mono',monospace;font-size:13px;border-bottom:1px solid var(--border)}
+.gotcha-q{padding:12px 18px;background:var(--surface2);font-size:13px;font-weight:600;color:var(--yellow);border-bottom:1px solid var(--border)}
+.gotcha-a{padding:12px 18px;font-size:13px;color:var(--muted);line-height:1.6}
+.gotcha-a strong{color:var(--text)}
+
+/* Syntax */
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.num{color:#79c0ff}.cm{color:#484f58;font-style:italic}.bi{color:#ffa657}.kw2{color:#79c0ff}.va{color:#e6edf3}
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--purple)}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🎬 MovieMatch</span>
+  <a href="index.html">← Hub</a>
+  <a href="code-walkthrough.html">Walkthrough</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="#" class="cur">Interview Prep</a>
+  <a href="deep-dive-roommanager.html">Deep Dive</a>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)">
+    <a href="#walk">Walkthrough</a> ·
+    <a href="#tech-q">Tech</a> ·
+    <a href="#arch-q">Architecture</a> ·
+    <a href="#critical">Critical</a> ·
+    <a href="#gotchas">Gotchas</a>
+  </span>
+</nav>
+<div class="container">
+
+<!-- SECTION 1: Walk me through it -->
+<h2 id="walk">1. "Walk me through the project"</h2>
+<p class="section-intro">Memorize this verbal answer. It should take about 90 seconds and cover what, why, and how.</p>
+<div class="walkthrough">
+  <p><strong>MovieMatch is a real-time two-player movie swiping app.</strong> The core problem it solves is the "what should we watch" deadlock — two people who can't agree. The mechanic is simple: both players see the same set of movies simultaneously and swipe right or left. When both like the same film, it's a match.</p>
+  <p><strong>On the technical side,</strong> I built it with a Node.js backend using Express and Socket.io for real-time communication, and a React frontend with Vite. The movie data comes from TMDB's Discover API — I fetch three random pages of results for each room, shuffle them, and take the top 20. That variety means different rooms see different movies.</p>
+  <p><strong>The interesting design decision</strong> is how matches are revealed. I don't broadcast a match the moment it's detected — instead, I hold all matches until both players finish swiping. This is intentional: if Player A finishes early and sees a match pop up, they know exactly which movies Player B liked. Holding the reveal preserves the mutual surprise and prevents information asymmetry.</p>
+  <p><strong>State is managed server-side</strong> in a simple in-memory Map — each room is an object with a users array, a votes dictionary, and a matches array. I also added an optional Postgres fallback so rooms survive a server restart. The client persists movies in sessionStorage so page refreshes within the same tab work seamlessly.</p>
+</div>
+
+<!-- SECTION 2: Technology Questions -->
+<h2 id="tech-q">2. Technology Questions</h2>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">What is Socket.io and why did you use it instead of raw WebSockets?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>Socket.io is a real-time communication library that wraps WebSockets with several production-grade features. The key ones I relied on are:</p>
+    <ul>
+      <li><strong>Rooms</strong>: built-in concept of named groups. <code>socket.join(roomId)</code> and <code>io.to(roomId).emit()</code> let me broadcast to exactly the two players in a room without tracking socket IDs manually.</li>
+      <li><strong>Automatic reconnection</strong>: if a player's connection drops briefly, Socket.io reconnects and fires the 'connect' event. I re-emit <code>join-room</code> on reconnect so the new socket ID gets registered with the room.</li>
+      <li><strong>HTTP polling fallback</strong>: if WebSockets fail (corporate proxies, old browsers), Socket.io falls back to long-polling transparently.</li>
+    </ul>
+    <p>Raw WebSockets would require implementing all of this manually. The trade-off is a larger dependency, but for a real-time multi-player app, Socket.io's abstractions are worth it.</p>
+    <div class="tldr"><strong>TL;DR:</strong> Socket.io's room system, reconnection handling, and fallback transport made multi-player sync significantly easier than raw WebSockets.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">Why is the socket a singleton module? Why not create it inside each component?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>JavaScript ES module imports are cached by the runtime. Every file that does <code>import socket from '../socket.js'</code> gets back the <em>exact same object</em>. This makes socket.js a natural singleton without any special design pattern code.</p>
+    <p>If I created the socket inside each component, I'd have multiple connections to the server (one per component), and events registered in one component wouldn't be visible to another. I'd also need React Context or a global store to share it.</p>
+    <p>The singleton means <strong>Home.jsx and Room.jsx both use the same socket</strong>, and navigating between them doesn't disconnect/reconnect — the socket stays alive across route changes.</p>
+    <div class="tldr"><strong>TL;DR:</strong> ES module cache = automatic singleton. One socket, shared across all components, no Context needed.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">Why is autoConnect: false set on the socket?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>When <code>socket.js</code> is first imported, the module runs immediately. If autoConnect were true, a WebSocket connection would be established the moment the app loads — before the user has done anything.</p>
+    <p>With <code>autoConnect: false</code>, the socket is created (the object exists) but doesn't connect. The actual connection happens in <code>Home.jsx</code>'s <code>useEffect</code> when <code>socket.connect()</code> is called. This gives intentional control over when the connection happens, avoids a connection on app load if the user navigates away quickly, and is more predictable to reason about.</p>
+    <div class="tldr"><strong>TL;DR:</strong> Prevents an automatic connection on import. The app explicitly connects when it's actually needed.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">Why use sessionStorage instead of localStorage or React state for movies?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>Each option has a different scope:</p>
+    <ul>
+      <li><strong>React state</strong>: cleared on page refresh. If a player accidentally refreshes mid-game, they lose the movie list and the room breaks.</li>
+      <li><strong>localStorage</strong>: persists until explicitly cleared. A player coming back the next day could accidentally "join" the old room with stale movies.</li>
+      <li><strong>sessionStorage</strong>: scoped to the browser tab and the current page session. It survives a refresh (within the same tab) but is automatically cleared when the tab closes. Perfect for ephemeral game data.</li>
+    </ul>
+    <p>Two different browser tabs also get their own <code>sessionStorage</code> — which is correct behavior since they're treated as two separate players.</p>
+    <div class="tldr"><strong>TL;DR:</strong> sessionStorage survives refresh but auto-clears on tab close. Exactly the right lifetime for game session data.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">What is TMDB and why did you choose it?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>TMDB (The Movie Database) is an open community-maintained movie database. Their API is free for non-commercial use with just a free account registration — no credit card, no billing, no rate limit concerns for small apps.</p>
+    <p>The specific reason I chose TMDB over alternatives (OMDb, JustWatch, IMDb) is the <strong>Discover API</strong>. It's a single endpoint that supports all the filters I needed — genre, year range, runtime, original language, US age certification, and vote average — as URL parameters. Other APIs would have required building my own filter logic on top of more limited data.</p>
+    <div class="tldr"><strong>TL;DR:</strong> Free API with a Discover endpoint that natively supports all the filters we need in a single request.</div>
+  </div>
+</details>
+
+<!-- SECTION 3: Architecture Questions -->
+<h2 id="arch-q">3. Architecture Questions</h2>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">How does match detection work?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>Match detection happens in <code>recordVote()</code> on the server. When a vote comes in, the function stores it in a nested object: <code>room.votes[socketId][movieId] = liked</code>.</p>
+    <p>For every <code>liked = true</code> vote, it immediately checks if the <em>other</em> player has already voted <code>true</code> for the same movie: <code>room.votes[other]?.[movieId] === true</code>. If both have liked it, the movie is pushed to <code>room.matches[]</code>.</p>
+    <p>Crucially, this detection happens <strong>in real time</strong> as votes arrive, but the matches are <strong>not broadcast until both players finish</strong>. The <code>markDone()</code> function returns the accumulated matches array only when all users are in the <code>done</code> Set — that's when <code>all-done</code> is emitted to both players.</p>
+    <div class="tldr"><strong>TL;DR:</strong> Detected greedily on each vote using a two-pointer check. Revealed only when all players finish (privacy gate).</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">Why doesn't the room creator have to "join" again? How does Room.jsx work for them?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>When Room.jsx mounts, it <em>always</em> emits <code>join-room</code> — even for the creator who is already in the room. The <code>joinRoom()</code> function handles this gracefully: it checks <code>if (room.users.includes(socketId)) return { room }</code> — returning success immediately without adding the user again.</p>
+    <p>This design serves two purposes: (1) It's a clean single-path for all players — Room.jsx doesn't need to know if the user is the creator or a joiner. (2) It handles reconnection after a server restart — even the creator needs to re-register their socket ID when the server restarts.</p>
+    <div class="tldr"><strong>TL;DR:</strong> joinRoom() is idempotent — adding an existing socket is a no-op. Room.jsx always calls it, handling both creators and joiners with the same code path.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">What happens if the server restarts while players are in a game?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>With only in-memory storage: the rooms Map is wiped. When Socket.io reconnects, Room.jsx re-emits <code>join-room</code>. The server checks the Map, doesn't find the room, and emits an <code>error</code>. Room.jsx catches this and redirects to the home page.</p>
+    <p>With <strong>DATABASE_URL configured</strong>: <code>joinRoom()</code> has a cache-miss fallback. If the room isn't in memory, it queries Postgres for the room's movies. It reconstructs a fresh room object with those movies (empty votes and matches). Both players can rejoin — but vote history is lost since Postgres only stores movies, not votes. They'd essentially start a fresh game in the same room.</p>
+    <div class="tldr"><strong>TL;DR:</strong> Without DB: kicked to home on reconnect. With DB: room recovers its movie list but loses vote progress — clean restart in the same room.</div>
+  </div>
+</details>
+
+<!-- SECTION 4: Critical Thinking -->
+<h2 id="critical">4. Critical Thinking Questions</h2>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">What are the limitations of this approach?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <ul>
+      <li><strong>Single-server only</strong>: in-memory rooms can't be shared across server instances. Horizontal scaling requires Redis + the Socket.io Redis adapter.</li>
+      <li><strong>Linear scan on disconnect</strong>: <code>getRoomBySocket()</code> iterates all rooms. At thousands of concurrent rooms, this becomes a bottleneck. Fix: maintain a reverse Map.</li>
+      <li><strong>No authentication</strong>: anyone with the code can join. A third person gets an error, but room codes are guessable given enough tries.</li>
+      <li><strong>20-movie hard cap</strong>: no pagination or "load more" within a session.</li>
+      <li><strong>Solo playability</strong>: a single player can swipe through all movies, but can never see matches (the "all done" gate requires both players). The UX shows a permanent "waiting for partner" screen if the second player never joins.</li>
+    </ul>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">How would you scale this to handle 10,000 concurrent rooms?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p>The current single-server architecture breaks at scale for two reasons: memory limits and the inability to load-balance across instances (two players might hit different servers).</p>
+    <p>The fix involves three changes:</p>
+    <ul>
+      <li><strong>Redis for room state</strong>: move the <code>rooms</code> Map to Redis. Redis is shared across all server instances, so any instance can handle any socket event. Room data would serialize to JSON (same structure).</li>
+      <li><strong>Socket.io Redis adapter</strong>: the <code>io.to(roomId).emit()</code> calls need to broadcast across all instances. The Redis adapter handles this by publishing to a Redis pub/sub channel.</li>
+      <li><strong>Persistent vote storage</strong>: with horizontal scaling, you'd want to use a proper DB (Postgres) for votes too, not just movies — to handle mid-session server reassignments.</li>
+    </ul>
+    <div class="tldr"><strong>TL;DR:</strong> Redis for shared state + Socket.io Redis adapter for cross-instance broadcasting. This is the standard Socket.io scaling pattern.</div>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">What would you do differently with more time?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <ul>
+      <li><strong>Reverse socket-to-room Map</strong>: replace the O(n) <code>getRoomBySocket()</code> scan with a Map lookup. One line of change, big scalability win.</li>
+      <li><strong>Persist votes to DB</strong>: currently only movies are persisted. Storing votes would allow mid-session recovery after server restart.</li>
+      <li><strong>Spectator mode</strong>: let a third person watch the swiping session in real time without voting.</li>
+      <li><strong>Movie streaming links</strong>: integrate JustWatch API to show where each matched movie can be streamed.</li>
+      <li><strong>Room expiry via Postgres</strong>: currently cleanup happens in a setTimeout in memory. A proper Postgres TTL cleanup job would be more reliable.</li>
+    </ul>
+  </div>
+</details>
+
+<details>
+  <summary>
+    <span class="q-label">Q</span>
+    <span class="q-text">How would you test this?</span>
+    <span class="q-arrow">▶</span>
+  </summary>
+  <div class="answer">
+    <p><strong>Unit tests</strong> for roomManager.js — it's pure functions with no I/O (the pool calls are behind if(pool) guards). Test: createRoom generates valid codes, recordVote detects mutual likes correctly, markDone returns null until all players done, generateCode excludes ambiguous characters.</p>
+    <p><strong>Integration tests</strong> for the socket event flow using a real Socket.io test client (socket.io-client in a test environment). Simulate two players connecting, creating a room, voting, and finishing. Assert that <code>all-done</code> is received with the correct matches.</p>
+    <p><strong>E2E tests</strong> with Playwright — open two browser contexts, create and join a room, both swipe, verify the results screen shows matches.</p>
+    <p>The hardest part to test is timing — the 350ms setTimeout in MovieCard.exit. Use fake timers (vitest's vi.useFakeTimers) to control this.</p>
+  </div>
+</details>
+
+<!-- SECTION 5: Code Gotchas -->
+<h2 id="gotchas">5. Code Gotchas — "What does this line do?"</h2>
+<p class="section-intro">These specific lines from the codebase are the most likely to be asked about in a technical interview.</p>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">if</span> (matches !== <span class="kw2">null</span>) { io.<span class="fn">to</span>(roomId).<span class="fn">emit</span>(<span class="str">'all-done'</span>, matches); }</div>
+  <div class="gotcha-q">Why !== null and not just if (matches)?</div>
+  <div class="gotcha-a"><strong>Because an empty array <code>[]</code> is falsy</strong> in the context of <code>if (matches)</code> — it would evaluate as false even though it means "everyone is done, just no matches." The <code>markDone()</code> function returns <code>null</code> to mean "still waiting" and <code>[]</code> or a populated array to mean "all done." Checking <code>!== null</code> correctly distinguishes these two cases.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">if</span> (other &amp;&amp; room.votes[other]?.[movieId] === <span class="kw2">true</span>) {</div>
+  <div class="gotcha-q">What does the ?. do here and why === true instead of just truthy?</div>
+  <div class="gotcha-a"><strong>Optional chaining (?.):</strong> if <code>room.votes[other]</code> is undefined (the other player hasn't voted yet, or their votes object doesn't exist), the expression short-circuits to <code>undefined</code> instead of throwing <code>TypeError: Cannot read property of undefined</code>. <br><br><strong>=== true instead of truthy:</strong> <code>undefined</code> is falsy, but we need to distinguish "hasn't voted" (<code>undefined</code>) from "voted no" (<code>false</code>). Strict equality ensures only an explicit <code>true</code> vote triggers a match.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">const</span> socket = <span class="fn">io</span>(SERVER_URL, { autoConnect: <span class="kw2">false</span> });</div>
+  <div class="gotcha-q">The module runs immediately — why isn't the socket connected after this line?</div>
+  <div class="gotcha-a"><code>autoConnect: false</code> creates the socket object and configures it but does NOT initiate the WebSocket handshake. The socket is in a "disconnected but ready" state. <code>socket.connect()</code> must be called explicitly to trigger the actual connection. This gives the application control over <em>when</em> the connection happens — in Home.jsx's <code>useEffect</code>, after the component mounts.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">const</span> [movies, setMovies] = <span class="fn">useState</span>(() =&gt; {
+  <span class="kw">try</span> { <span class="kw">return</span> <span class="bi">JSON</span>.<span class="fn">parse</span>(sessionStorage.<span class="fn">getItem</span>(<span class="str">'movies'</span>) || <span class="str">'[]'</span>); }
+  <span class="kw">catch</span> { <span class="kw">return</span> []; }
+});</div>
+  <div class="gotcha-q">Why pass a function to useState instead of the value directly?</div>
+  <div class="gotcha-a">This is the <strong>lazy initializer</strong> pattern. If you pass a value directly (<code>useState(JSON.parse(...))</code>), the expression is evaluated on <em>every render</em> — sessionStorage is read and JSON is parsed 10, 20, 100 times. Passing a function means React only calls it once (on mount) and caches the result. For expensive initialization like JSON.parse, this avoids unnecessary work on re-renders.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">const</span> onVoteRef = <span class="fn">useRef</span>(onVote);
+<span class="fn">useEffect</span>(() =&gt; { onVoteRef.current = onVote; }, [onVote]);</div>
+  <div class="gotcha-q">Why not just use onVote directly in the event listeners?</div>
+  <div class="gotcha-a">Event listeners registered inside <code>useEffect(fn, [])</code> close over the <strong>initial value</strong> of <code>onVote</code> and never update. If <code>onVote</code> changes (e.g. parent re-renders with a new function reference), the listener still calls the old one — a stale closure bug. The fix: store <code>onVote</code> in a ref. The ref <em>object</em> itself never changes (same reference), but <code>ref.current</code> is always updated to the latest value. Listeners read <code>onVoteRef.current(liked)</code> at call time, getting the current version.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">const</span> CONFETTI = <span class="bi">Array</span>.<span class="fn">from</span>({ length: <span class="num">32</span> }, (_, i) =&gt; ({
+  left: <span class="str">`${(i * 3.23 + 3) % 94}%`</span>,
+  ...
+}));</div>
+  <div class="gotcha-q">Why is this defined at module level and not inside the component?</div>
+  <div class="gotcha-a">If this were inside the component body, React would regenerate 32 new random positions on <em>every render</em>. In React StrictMode (dev mode), components render twice — confetti positions would change between renders, causing a visual "jump". By defining CONFETTI at <strong>module level</strong>, it's computed exactly once when the file is first imported. Positions are fixed for the entire session. The deterministic math (<code>i * 3.23</code>) also means the same positions are reproduced predictably.</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code">rooms.<span class="fn">set</span>(id, {
+  votes: { [socketId]: {} },
+  done: <span class="kw">new</span> <span class="bi">Set</span>(),
+});</div>
+  <div class="gotcha-q">Why use an object for votes but a Set for done?</div>
+  <div class="gotcha-a"><strong>votes</strong> is an object keyed by socketId, then by movieId: <code>{ "socket123": { 550: true, 27205: false } }</code>. It's a lookup structure — we need to find "has this socket voted for this movieId?" in O(1). An object/Map is the right choice.<br><br><strong>done</strong> just needs to track membership: "is this socketId done?" Sets are optimized for membership checks (<code>.has()</code>) and prevent duplicates — if a player sends player-done twice, <code>Set.add</code> is idempotent (no duplicate entries).</div>
+</div>
+
+<div class="gotcha">
+  <div class="gotcha-code"><span class="kw">return</span> <span class="fn">shuffle</span>(<span class="fn">formatMovies</span>(combined)).<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">20</span>);</div>
+  <div class="gotcha-q">Walk me through what this line does step by step.</div>
+  <div class="gotcha-a">
+    Three transformations in order:
+    <ol style="margin:8px 0 0 20px;line-height:2">
+      <li><code>formatMovies(combined)</code> — takes the raw TMDB objects array, filters out incomplete entries (no poster/title/overview), and maps each one to the app's lean shape: <code>{ id, title, overview, poster, year, rating }</code>. Returns a filtered, reformatted array.</li>
+      <li><code>shuffle(...)</code> — Fisher-Yates in-place shuffle of the formatted array. Randomizes order so every room sees movies in a different sequence. Returns the same array (mutated).</li>
+      <li><code>.slice(0, 20)</code> — takes the first 20 elements. Three pages × 20 results = up to 60 movies; we only want 20. Since the array was shuffled, this picks a random 20 from the combined pool.</li>
+    </ol>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

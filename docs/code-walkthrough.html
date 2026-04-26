@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Code Walkthrough — MovieMatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;700;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d1117; --surface:#161b22; --surface2:#1c2128; --border:#30363d; --text:#e6edf3; --muted:#8b949e;
+  --green:#3fb950; --green-dim:#1a3a20; --blue:#58a6ff; --blue-dim:#0d2a4a;
+  --orange:#d29922; --orange-dim:#3a2a00; --purple:#bc8cff; --purple-dim:#2d1f4a;
+  --red:#f85149; --red-dim:#3a1010; --yellow:#e3b341; --yellow-dim:#3a2e00; --cyan:#39c5cf; --cyan-dim:#0d3038;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Heebo',sans-serif;line-height:1.6}
+nav{position:sticky;top:0;background:rgba(13,17,23,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;padding:11px 20px;z-index:100;flex-wrap:wrap}
+nav a{color:var(--muted);text-decoration:none;font-size:12px;transition:color .15s}
+nav a:hover{color:var(--text)}
+nav .logo{color:var(--text);font-weight:700;font-size:14px;margin-right:6px}
+nav .cur{color:var(--blue)}
+
+.container{max-width:1100px;margin:0 auto;padding:40px 20px}
+
+.file-header{
+  display:flex;align-items:center;gap:14px;padding:18px 20px;border-radius:10px 10px 0 0;
+  margin-top:48px;border:1px solid;
+}
+.file-title{font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+.file-desc{font-size:13px;color:var(--muted);margin-top:2px}
+.file-badge{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:3px 9px;border-radius:4px}
+
+/* File colors */
+.f-index  {color:var(--blue);  border-color:var(--blue);  background:var(--blue-dim) }
+.f-room   {color:var(--green); border-color:var(--green); background:var(--green-dim)}
+.f-tmdb   {color:var(--orange);border-color:var(--orange);background:var(--orange-dim)}
+.f-db     {color:var(--purple);border-color:var(--purple);background:var(--purple-dim)}
+.f-socket {color:var(--cyan);  border-color:var(--cyan);  background:var(--cyan-dim) }
+.f-app    {color:var(--red);   border-color:var(--red);   background:var(--red-dim)  }
+.f-home   {color:var(--yellow);border-color:var(--yellow);background:var(--yellow-dim)}
+.f-roompage{color:#79c0ff;     border-color:#79c0ff;      background:var(--blue-dim) }
+.f-card   {color:#ff7b72;      border-color:#ff7b72;      background:#3a1020         }
+.f-modal  {color:var(--purple);border-color:var(--purple);background:var(--purple-dim)}
+
+.fb{display:inline-block;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;margin:0 2px}
+.fb-index  {background:var(--blue-dim);  color:var(--blue);  border:1px solid var(--blue)}
+.fb-room   {background:var(--green-dim); color:var(--green); border:1px solid var(--green)}
+.fb-tmdb   {background:var(--orange-dim);color:var(--orange);border:1px solid var(--orange)}
+.fb-db     {background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple)}
+.fb-socket {background:var(--cyan-dim);  color:var(--cyan);  border:1px solid var(--cyan)}
+.fb-app    {background:var(--red-dim);   color:var(--red);   border:1px solid var(--red)}
+.fb-home   {background:var(--yellow-dim);color:var(--yellow);border:1px solid var(--yellow)}
+.fb-roompage{background:var(--blue-dim); color:#79c0ff;      border:1px solid #79c0ff}
+.fb-card   {background:#3a1020;          color:#ff7b72;      border:1px solid #ff7b72}
+.fb-modal  {background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple)}
+.fb-ret    {display:block;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:3px}
+
+/* Code table */
+.code-wrap{border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;overflow:hidden;margin-bottom:12px}
+.func-divider{
+  background:var(--surface2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);
+  padding:10px 16px;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:10px
+}
+.func-divider .fname{color:var(--purple)}
+.func-divider .fkind{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+
+.func-summary{
+  margin:0;padding:14px 18px;background:var(--surface2);
+  border-bottom:1px solid var(--border);border-left:4px solid var(--muted);
+  font-size:13px;color:var(--text);line-height:1.7
+}
+.func-summary .fs-label{
+  font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:6px;font-family:'JetBrains Mono',monospace;display:block
+}
+.func-summary strong{color:var(--cyan)}
+
+table.ct{width:100%;border-collapse:collapse}
+table.ct td{padding:3px 0;vertical-align:top;border-bottom:1px solid rgba(48,54,61,.5)}
+table.ct tr:hover td{background:var(--surface2)}
+.ln{width:44px;padding:3px 10px 3px 14px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);user-select:none;white-space:nowrap}
+.code{padding:3px 14px;font-family:'JetBrains Mono',monospace;font-size:12px;white-space:pre;flex:1;min-width:0}
+.ann{padding:3px 14px 3px 0;font-size:12px;color:var(--muted);max-width:320px;min-width:180px;line-height:1.5;border-left:3px solid var(--border)}
+.ann.important{border-left-color:var(--yellow);background:rgba(227,179,65,.04)}
+.ann.key{border-left-color:var(--cyan);background:rgba(57,197,207,.04)}
+.ann.warn{border-left-color:var(--orange);background:rgba(210,153,34,.04)}
+.ann.good{border-left-color:var(--green);background:rgba(63,185,80,.04)}
+
+/* Syntax highlight */
+.kw{color:#ff7b72}.fn{color:#d2a8ff}.str{color:#a5d6ff}.num{color:#79c0ff}
+.cm{color:#484f58;font-style:italic}.bi{color:#ffa657}.op{color:#ff7b72}
+.va{color:#e6edf3}.kw2{color:#79c0ff}
+
+/* Explain boxes */
+.explain{
+  margin:4px 0 12px;padding:14px 18px;border-radius:8px;font-size:13px;line-height:1.7;
+  border:1px solid
+}
+.explain h4{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;font-family:'JetBrains Mono',monospace}
+.explain-cyan  {background:var(--cyan-dim);  border-color:var(--cyan);  color:var(--text)}
+.explain-cyan h4{color:var(--cyan)}
+.explain-orange{background:var(--orange-dim);border-color:var(--orange);color:var(--text)}
+.explain-orange h4{color:var(--orange)}
+.explain-blue  {background:var(--blue-dim);  border-color:var(--blue);  color:var(--text)}
+.explain-blue h4{color:var(--blue)}
+.explain-purple{background:var(--purple-dim);border-color:var(--purple);color:var(--text)}
+.explain-purple h4{color:var(--purple)}
+.explain-green {background:var(--green-dim); border-color:var(--green); color:var(--text)}
+.explain-green h4{color:var(--green)}
+.explain-yellow{background:var(--yellow-dim);border-color:var(--yellow);color:var(--text)}
+.explain-yellow h4{color:var(--yellow)}
+
+code{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--surface2);padding:1px 5px;border-radius:3px;color:var(--purple)}
+
+.flow-arrow{text-align:center;padding:12px;color:var(--muted);font-size:18px;letter-spacing:4px}
+
+@media(max-width:768px){.ann{display:none}.code{font-size:11px}}
+</style>
+</head>
+<body>
+<nav>
+  <span class="logo">🎬 MovieMatch</span>
+  <a href="index.html">← Hub</a>
+  <a href="#" class="cur">Walkthrough</a>
+  <a href="architecture.html">Architecture</a>
+  <a href="interview-prep.html">Interview</a>
+  <a href="deep-dive-roommanager.html">Deep Dive</a>
+  <span style="margin-left:auto;font-size:11px;color:var(--muted)">Jump:
+    <a href="#sec-db">db.js</a> ·
+    <a href="#sec-tmdb">tmdb.js</a> ·
+    <a href="#sec-room">roomManager</a> ·
+    <a href="#sec-index">index.js</a> ·
+    <a href="#sec-socket">socket.js</a> ·
+    <a href="#sec-main">main.jsx</a> ·
+    <a href="#sec-home">Home</a> ·
+    <a href="#sec-roompage">Room</a> ·
+    <a href="#sec-card">MovieCard</a> ·
+    <a href="#sec-modal">MatchModal</a>
+  </span>
+</nav>
+<div class="container">
+
+<!-- ═══════════════════════════════ db.js ═══════════════════════════════ -->
+<div id="sec-db">
+<div class="file-header f-db">
+  <span class="file-badge f-db" style="font-size:11px">db.js</span>
+  <div>
+    <div class="file-title">server/db.js</div>
+    <div class="file-desc">Conditionally creates a PostgreSQL connection pool. If DATABASE_URL is absent, pool is null and the app runs fully in-memory.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">module level</span><span class="fname">db.js</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this file does</span>
+    This file does one thing: it checks whether the <strong>DATABASE_URL</strong> environment variable exists. If yes, it creates a <code>pg.Pool</code> (a managed pool of Postgres connections) and exports it. If not, it exports <code>null</code>. The rest of the codebase checks <code>if (pool)</code> before any DB call, so the app works perfectly without a database.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">1</td><td class="code"><span class="kw">import</span> pg <span class="kw">from</span> <span class="str">'pg'</span>;</td><td class="ann key">pg is the official Node.js PostgreSQL client. The package is named 'pg'.</td></tr>
+    <tr><td class="ln">2</td><td class="code"><span class="kw">const</span> { Pool } = pg;</td><td class="ann">Destructures Pool class from the pg module. Pool manages multiple concurrent DB connections automatically.</td></tr>
+    <tr><td class="ln">4</td><td class="code"><span class="kw">export const</span> pool = <span class="kw2">process</span>.env.<span class="va">DATABASE_URL</span></td><td class="ann important">DATABASE_URL is the standard Railway/Heroku Postgres connection string format.</td></tr>
+    <tr><td class="ln">5</td><td class="code">  ? <span class="kw">new</span> <span class="fn">Pool</span>({ connectionString: ..., ssl: { rejectUnauthorized: <span class="kw2">false</span> } })</td><td class="ann warn">ssl.rejectUnauthorized:false allows self-signed certs used by Railway/Heroku Postgres. Required in production.</td></tr>
+    <tr><td class="ln">7</td><td class="code">  : <span class="kw2">null</span>;</td><td class="ann">No DATABASE_URL → pool is null → all DB calls below are skipped → pure in-memory mode.</td></tr>
+    <tr><td class="ln">9</td><td class="code"><span class="kw">export async function</span> <span class="fn">initSchema</span>() {</td><td class="ann good">Called once at server startup. Idempotent — safe to call every restart.</td></tr>
+    <tr><td class="ln">10</td><td class="code">  <span class="kw">if</span> (!pool) <span class="kw">return</span>;</td><td class="ann">Early return if no DB configured. Entire schema init is skipped.</td></tr>
+    <tr><td class="ln">11</td><td class="code">  <span class="kw">await</span> pool.<span class="fn">query</span>(`</td><td class="ann">Executes raw SQL using the pool. await ensures the table exists before the server accepts connections.</td></tr>
+    <tr><td class="ln">12</td><td class="code">    <span class="str">CREATE TABLE IF NOT EXISTS rooms (</span></td><td class="ann key">IF NOT EXISTS makes this idempotent — won't error if table already exists.</td></tr>
+    <tr><td class="ln">13</td><td class="code">      <span class="str">id VARCHAR(6) PRIMARY KEY,</span></td><td class="ann">Room codes are exactly 6 characters. VARCHAR(6) enforces this at the DB level.</td></tr>
+    <tr><td class="ln">14</td><td class="code">      <span class="str">movies JSONB NOT NULL,</span></td><td class="ann">JSONB stores the movies array as binary JSON — faster queries than TEXT. Allows querying into the JSON structure.</td></tr>
+    <tr><td class="ln">15</td><td class="code">      <span class="str">created_at TIMESTAMP DEFAULT NOW()</span></td><td class="ann">Auto-set on insert. Could be used for TTL cleanup in the future.</td></tr>
+    <tr><td class="ln">17</td><td class="code">  `);</td><td class="ann"></td></tr>
+    <tr><td class="ln">18</td><td class="code">}</td><td class="ann"></td></tr>
+  </table>
+</div>
+
+<div class="explain explain-purple">
+  <h4>Pattern: Optional Database — Null Object</h4>
+  <p>Instead of throwing an error when DATABASE_URL is missing, the app exports <code>null</code> and checks <code>if (pool)</code> before every DB call. This is a lightweight "null object" pattern — local dev needs zero DB setup, production gets persistence.</p>
+  <p><strong>Why JSONB for movies?</strong> Each room stores the full 20-movie array as a single JSON blob. There's no need to query individual movies from Postgres — the whole array is read back in one go. JSONB is more storage-efficient than TEXT and supports GIN indexes if needed later.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ tmdb.js ═══════════════════════════════ -->
+<div id="sec-tmdb">
+<div class="flow-arrow">↓ tmdb.js fetches the movies that fill each room ↓</div>
+<div class="file-header f-tmdb">
+  <span class="file-badge f-tmdb" style="font-size:11px">tmdb.js</span>
+  <div>
+    <div class="file-title">server/tmdb.js</div>
+    <div class="file-desc">TMDB API wrapper. Builds Discover URL from filter params, fetches 3 random pages in parallel, shuffles, returns 20 movies.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">utility</span> <span class="fname">shuffle(arr)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Randomly reorders an array <strong>in place</strong> using the Fisher-Yates algorithm. Called on the combined movie results so every room gets a different movie order, preventing players from memorizing the sequence.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">5</td><td class="code"><span class="kw">function</span> <span class="fn">shuffle</span>(arr) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">6</td><td class="code">  <span class="kw">for</span> (<span class="kw">let</span> i = arr.length - <span class="num">1</span>; i > <span class="num">0</span>; i--) {</td><td class="ann key">Iterates backwards from last element to index 1.</td></tr>
+    <tr><td class="ln">7</td><td class="code">    <span class="kw">const</span> j = <span class="bi">Math</span>.<span class="fn">floor</span>(<span class="bi">Math</span>.<span class="fn">random</span>() * (i + <span class="num">1</span>));</td><td class="ann">Picks a random index from 0..i (inclusive). The key is i+1 — so index i itself can be chosen (no move = valid).</td></tr>
+    <tr><td class="ln">8</td><td class="code">    [arr[i], arr[j]] = [arr[j], arr[i]];</td><td class="ann good">ES6 destructuring swap — no temp variable needed.</td></tr>
+    <tr><td class="ln">10</td><td class="code">  <span class="kw">return</span> arr;</td><td class="ann">Returns the same array reference (mutated). Caller gets the shuffled array back.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">utility</span> <span class="fname">randomPages(count, max)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Returns <strong>count</strong> unique random page numbers between 1 and max. Used to pick 3 non-repeating TMDB pages to fetch — so every room gets a random slice of TMDB's catalog, not always the top page.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">13</td><td class="code"><span class="kw">function</span> <span class="fn">randomPages</span>(count, max = <span class="num">10</span>) {</td><td class="ann">Default max=10 means pages 1-10 of TMDB results. TMDB caps at 500 but popular movies cluster in the first ~10.</td></tr>
+    <tr><td class="ln">14</td><td class="code">  <span class="kw">const</span> pages = <span class="kw">new</span> <span class="bi">Set</span>();</td><td class="ann key">Set automatically prevents duplicates — no need to check if a page was already picked.</td></tr>
+    <tr><td class="ln">15</td><td class="code">  <span class="kw">while</span> (pages.size &lt; count) pages.<span class="fn">add</span>(<span class="bi">Math</span>.<span class="fn">floor</span>(<span class="bi">Math</span>.<span class="fn">random</span>() * max) + <span class="num">1</span>);</td><td class="ann">Loop until we have 'count' unique pages. +1 makes range 1..max instead of 0..max-1.</td></tr>
+    <tr><td class="ln">16</td><td class="code">  <span class="kw">return</span> [...pages];</td><td class="ann">Spread converts Set to Array. Order is insertion order (arbitrary).</td></tr>
+  </table>
+
+  <div class="explain explain-cyan">
+    <h4>Why Set for random pages?</h4>
+    <p>A <code>Set</code> guarantees uniqueness with O(1) membership checks. The while loop keeps trying until it has 3 unique pages. Since max=10 and count=3, worst-case retries are low — this is efficient. Alternative: shuffle [1..max] and slice — cleaner but overkill for 3 picks from 10.</p>
+  </div>
+
+  <div class="func-divider"><span class="fkind">utility</span> <span class="fname">formatMovies(results)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Takes raw TMDB API response objects, filters out any movies missing a poster, title, or overview (incomplete data), then maps each one to the app's lean movie shape. This is the data transformation layer — TMDB gives 20+ fields per movie, the app only needs 6.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">19</td><td class="code"><span class="kw">function</span> <span class="fn">formatMovies</span>(results) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">20</td><td class="code">  <span class="kw">return</span> results</td><td class="ann"></td></tr>
+    <tr><td class="ln">21</td><td class="code">    .<span class="fn">filter</span>(m =&gt; m.poster_path &amp;&amp; m.title &amp;&amp; m.overview)</td><td class="ann warn">Removes movies with missing data. Without this, cards would show broken images or blank text.</td></tr>
+    <tr><td class="ln">22</td><td class="code">    .<span class="fn">map</span>(m =&gt; ({</td><td class="ann"></td></tr>
+    <tr><td class="ln">23</td><td class="code">      id: m.id,</td><td class="ann key">TMDB's numeric movie ID. Used as the key when recording votes on the server.</td></tr>
+    <tr><td class="ln">24</td><td class="code">      title: m.title,</td><td class="ann"></td></tr>
+    <tr><td class="ln">25</td><td class="code">      overview: m.overview,</td><td class="ann">Short synopsis shown on the swipe card.</td></tr>
+    <tr><td class="ln">26</td><td class="code">      poster: <span class="str">`https://image.tmdb.org/t/p/w500${m.poster_path}`</span>,</td><td class="ann important">Builds the full TMDB image CDN URL. w500 = 500px wide. TMDB stores only the path (e.g. /abc123.jpg).</td></tr>
+    <tr><td class="ln">27</td><td class="code">      year: m.release_date ? m.release_date.<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">4</span>) : <span class="str">'?'</span>,</td><td class="ann">release_date is "YYYY-MM-DD". Slice first 4 chars = year. Fallback '?' for movies with no release date.</td></tr>
+    <tr><td class="ln">28</td><td class="code">      rating: <span class="bi">Math</span>.<span class="fn">round</span>(m.vote_average * <span class="num">10</span>) / <span class="num">10</span>,</td><td class="ann">Rounds TMDB's raw float (e.g. 7.234) to one decimal place (7.2). Multiply-round-divide pattern.</td></tr>
+    <tr><td class="ln">29</td><td class="code">    }))</td><td class="ann"></td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">exported</span> <span class="fname">fetchMovies(apiKey, genreId, opts)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    The main public function of this module. Takes the TMDB API key, an optional genre ID, and all filter options. Builds a TMDB Discover API URL, fetches 3 random pages in <strong>parallel</strong>, combines all results, shuffles them, and returns the first 20.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">32</td><td class="code"><span class="kw">export async function</span> <span class="fn">fetchMovies</span>(apiKey, genreId = <span class="kw2">null</span>, { yearFrom, ... } = {}) {</td><td class="ann key">= {} default means callers can omit the third argument entirely without an error.</td></tr>
+    <tr><td class="ln">33</td><td class="code">  <span class="kw">const</span> pages = <span class="fn">randomPages</span>(<span class="num">3</span>);</td><td class="ann">Pick 3 unique random page numbers (1-10). Defined above in this file.</td></tr>
+    <tr><td class="ln">34</td><td class="code">  <span class="kw">const</span> voteMin = genreId ? <span class="num">100</span> : <span class="num">200</span>;</td><td class="ann warn">Genre-filtered rooms use a lower vote threshold (100) because niche genres have fewer popular films. No-genre rooms require 200 votes for higher quality results.</td></tr>
+    <tr><td class="ln">35</td><td class="code">  <span class="kw">let</span> base = genreId</td><td class="ann"></td></tr>
+    <tr><td class="ln">36</td><td class="code">    ? <span class="str">`...discover/movie?...with_genres=${genreId}...`</span></td><td class="ann">TMDB Discover API — the primary endpoint for filtered movie lists. with_genres adds genre filtering.</td></tr>
+    <tr><td class="ln">37</td><td class="code">    : <span class="str">`...discover/movie?...sort_by=popularity.desc...`</span></td><td class="ann">No genre: just most popular movies overall.</td></tr>
+    <tr><td class="ln">39</td><td class="code">  <span class="kw">if</span> (yearFrom) base += <span class="str">`&amp;primary_release_date.gte=${yearFrom}-01-01`</span>;</td><td class="ann">TMDB's "greater than or equal" filter. Adds -01-01 to make it a full date.</td></tr>
+    <tr><td class="ln">40</td><td class="code">  <span class="kw">if</span> (yearTo)   base += <span class="str">`&amp;primary_release_date.lte=${yearTo}-12-31`</span>;</td><td class="ann">-12-31 captures the full final year (end of year).</td></tr>
+    <tr><td class="ln">41</td><td class="code">  <span class="kw">if</span> (minRating) base += <span class="str">`&amp;vote_average.gte=${minRating}`</span>;</td><td class="ann">Minimum TMDB vote average. 0 is falsy so "Any" (0) is correctly omitted.</td></tr>
+    <tr><td class="ln">42</td><td class="code">  <span class="kw">if</span> (runtimeMin) base += <span class="str">`&amp;with_runtime.gte=${runtimeMin}`</span>;</td><td class="ann"></td></tr>
+    <tr><td class="ln">43</td><td class="code">  <span class="kw">if</span> (runtimeMax) base += <span class="str">`&amp;with_runtime.lte=${runtimeMax}`</span>;</td><td class="ann"></td></tr>
+    <tr><td class="ln">44</td><td class="code">  <span class="kw">if</span> (language)   base += <span class="str">`&amp;with_original_language=${language}`</span>;</td><td class="ann">ISO 639-1 code, e.g. 'en', 'ko'. Filters by the language the film was originally made in.</td></tr>
+    <tr><td class="ln">45</td><td class="code">  <span class="kw">if</span> (certification) base += <span class="str">`&amp;certification_country=US&amp;certification.lte=...`</span>;</td><td class="ann important">.lte = "less than or equal". PG-13 includes G, PG, and PG-13. encodeURIComponent handles the hyphen.</td></tr>
+    <tr><td class="ln">47</td><td class="code">  <span class="kw">const</span> results = <span class="kw">await</span> <span class="bi">Promise</span>.<span class="fn">all</span>(</td><td class="ann key">Promise.all fires all 3 fetches simultaneously. Sequential would be 3x slower.</td></tr>
+    <tr><td class="ln">48</td><td class="code">    pages.<span class="fn">map</span>(p =&gt; <span class="fn">fetch</span>(<span class="str">`${base}&amp;page=${p}`</span>).<span class="fn">then</span>(r =&gt; r.<span class="fn">json</span>()))</td><td class="ann">Each page fetch: HTTP GET → parse JSON. The .then(r => r.json()) is chained so Promise.all resolves with parsed objects.</td></tr>
+    <tr><td class="ln">51</td><td class="code">  <span class="kw">const</span> combined = results.<span class="fn">flatMap</span>(r =&gt; <span class="bi">Array</span>.<span class="fn">isArray</span>(r.results) ? r.results : []);</td><td class="ann warn">flatMap merges all 3 pages' arrays into one. Array.isArray guard handles TMDB error responses (which have no .results).</td></tr>
+    <tr><td class="ln">52</td><td class="code">  <span class="kw">return</span> <span class="fn">shuffle</span>(<span class="fn">formatMovies</span>(combined)).<span class="fn">slice</span>(<span class="num">0</span>, <span class="num">20</span>);</td><td class="ann key">Pipeline: format → shuffle → take 20. Both players see the same 20 movies in the same (random) order.</td></tr>
+  </table>
+</div>
+
+<div class="explain explain-blue">
+  <h4>Why 3 random pages instead of page 1 every time?</h4>
+  <p>TMDB page 1 of any genre is always the same most-popular films. Fetching 3 random pages (from the top 10) gives variety — two rooms with the same genre will likely get different movies. The trade-off: popularity sorting means pages 8-10 have lower-rated obscure films, so max=10 keeps quality reasonable.</p>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ roomManager.js ═══════════════════════════════ -->
+<div id="sec-room">
+<div class="flow-arrow">↓ roomManager manages state for all active rooms ↓</div>
+<div class="file-header f-room">
+  <span class="file-badge f-room" style="font-size:11px">roomManager.js</span>
+  <div>
+    <div class="file-title">server/roomManager.js</div>
+    <div class="file-desc">All room state lives here. Creates rooms, joins players, records votes, detects matches, and cleans up. No HTTP — pure business logic.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">module level</span> <span class="fname">rooms Map</span></div>
+  <table class="ct">
+    <tr><td class="ln">1</td><td class="code"><span class="kw">import</span> { pool } <span class="kw">from</span> <span class="str">'./db.js'</span>;</td><td class="ann">pool is null in local dev. Every DB call below is guarded by <code>if (pool)</code>.</td></tr>
+    <tr><td class="ln">3</td><td class="code"><span class="kw">const</span> rooms = <span class="kw">new</span> <span class="bi">Map</span>();</td><td class="ann key">Module-level Map = global singleton. All socket handlers share the same rooms instance. Keyed by room code (string).</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">private</span> <span class="fname">generateCode()</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Generates a 6-character room code from a carefully chosen alphabet. Calls itself recursively if the code already exists (astronomically rare, but handled). Returns the new unique code.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">5</td><td class="code"><span class="kw">function</span> <span class="fn">generateCode</span>() {</td><td class="ann"></td></tr>
+    <tr><td class="ln">6</td><td class="code">  <span class="kw">const</span> chars = <span class="str">'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'</span>;</td><td class="ann key">Notice missing: I, O, 0, 1 — these look like each other. Intentional to prevent confusion when sharing codes verbally or in writing.</td></tr>
+    <tr><td class="ln">7</td><td class="code">  <span class="kw">let</span> code = <span class="str">''</span>;</td><td class="ann"></td></tr>
+    <tr><td class="ln">8</td><td class="code">  <span class="kw">for</span> (<span class="kw">let</span> i = <span class="num">0</span>; i &lt; <span class="num">6</span>; i++) {</td><td class="ann">6 character code. 32 chars ^ 6 positions = ~1 billion combinations. Collision rate is negligible.</td></tr>
+    <tr><td class="ln">9</td><td class="code">    code += chars[<span class="bi">Math</span>.<span class="fn">floor</span>(<span class="bi">Math</span>.<span class="fn">random</span>() * chars.length)];</td><td class="ann">Picks a random char from the 32-char alphabet each iteration.</td></tr>
+    <tr><td class="ln">11</td><td class="code">  <span class="kw">return</span> rooms.<span class="fn">has</span>(code) ? <span class="fn">generateCode</span>() : code;</td><td class="ann warn">If code already exists, try again recursively. With ~1B combinations and typical usage (hundreds of rooms), probability of collision is < 0.00001%.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">exported async</span> <span class="fname">createRoom(socketId, movies)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Generates a room code, creates the room data structure in the in-memory Map, and optionally persists the room to Postgres. Returns the new room code.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">14</td><td class="code"><span class="kw">export async function</span> <span class="fn">createRoom</span>(socketId, movies) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">15</td><td class="code">  <span class="kw">const</span> id = <span class="fn">generateCode</span>();</td><td class="ann">Generates unique 6-char code. Defined above.</td></tr>
+    <tr><td class="ln">16</td><td class="code">  rooms.<span class="fn">set</span>(id, {</td><td class="ann">Stores room object keyed by the code.</td></tr>
+    <tr><td class="ln">17</td><td class="code">    id,</td><td class="ann">Redundant — the key is also the id — but useful for when the room is found via value (e.g. getRoomBySocket).</td></tr>
+    <tr><td class="ln">18</td><td class="code">    users: [socketId],</td><td class="ann">Array of socket IDs in this room. Max 2. Creator is first element.</td></tr>
+    <tr><td class="ln">19</td><td class="code">    movies,</td><td class="ann">The 20-movie array from TMDB. Same for both players.</td></tr>
+    <tr><td class="ln">20</td><td class="code">    votes: { [socketId]: {} },</td><td class="ann key">votes is an object keyed by socketId. Each player's votes are stored as {movieId: boolean}. Creator's entry initialized immediately.</td></tr>
+    <tr><td class="ln">21</td><td class="code">    matches: [],</td><td class="ann">Accumulates movies both players liked. Populated by recordVote().</td></tr>
+    <tr><td class="ln">22</td><td class="code">    done: <span class="kw">new</span> <span class="bi">Set</span>(),</td><td class="ann">Tracks which players have finished swiping. Set prevents double-counting the same player.</td></tr>
+    <tr><td class="ln">25</td><td class="code">  <span class="kw">if</span> (pool) {</td><td class="ann">Only runs if DATABASE_URL is configured. Silently skipped in local dev.</td></tr>
+    <tr><td class="ln">26</td><td class="code">    <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'INSERT INTO rooms (id, movies) VALUES ($1, $2)'</span>, [id, <span class="bi">JSON</span>.<span class="fn">stringify</span>(movies)])</td><td class="ann">Parameterized query ($1, $2) prevents SQL injection. JSON.stringify converts the array to a string for JSONB storage.</td></tr>
+    <tr><td class="ln">27</td><td class="code">      .<span class="fn">catch</span>(err =&gt; <span class="bi">console</span>.<span class="fn">error</span>(...));</td><td class="ann warn">DB failure is non-fatal — caught and logged. Room still exists in memory. Player can still play even if DB write fails.</td></tr>
+    <tr><td class="ln">30</td><td class="code">  <span class="kw">return</span> id;</td><td class="ann">Returns the room code. Caller (index.js) uses it to join the Socket.io room and send to client.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">exported async</span> <span class="fname">joinRoom(code, socketId)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Finds the room by code — first in memory, then in Postgres as a fallback for server restarts. Validates the room exists, isn't full, and the player isn't already in it. Adds the joiner and returns the room.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">33</td><td class="code"><span class="kw">export async function</span> <span class="fn">joinRoom</span>(code, socketId) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">34</td><td class="code">  <span class="kw">let</span> room = rooms.<span class="fn">get</span>(code);</td><td class="ann">First check: in-memory Map lookup. O(1). Will be undefined if server restarted.</td></tr>
+    <tr><td class="ln">37</td><td class="code">  <span class="kw">if</span> (!room &amp;&amp; pool) {</td><td class="ann key">Cache miss AND DB is available → try to restore from Postgres (server restart recovery).</td></tr>
+    <tr><td class="ln">38</td><td class="code">    <span class="kw">const</span> { rows } = <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'SELECT id, movies FROM rooms WHERE id = $1'</span>, [code])</td><td class="ann">Fetches only id and movies — enough to reconstruct a working room. Votes start fresh (can't replay past votes from DB).</td></tr>
+    <tr><td class="ln">39</td><td class="code">      .<span class="fn">catch</span>(() =&gt; ({ rows: [] }));</td><td class="ann warn">DB errors return empty rows — treated as "room not found". The game degrades gracefully rather than crashing.</td></tr>
+    <tr><td class="ln">40</td><td class="code">    <span class="kw">if</span> (rows.length &gt; <span class="num">0</span>) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">41</td><td class="code">      room = { id: rows[<span class="num">0</span>].id, users: [], movies: rows[<span class="num">0</span>].movies, votes: {}, matches: [], done: <span class="kw">new</span> <span class="bi">Set</span>() };</td><td class="ann important">Restored room has empty users/votes/matches. Fresh start for both players on reconnect. The movies array is preserved from DB.</td></tr>
+    <tr><td class="ln">42</td><td class="code">      rooms.<span class="fn">set</span>(code, room);</td><td class="ann">Re-hydrate memory cache so subsequent joins don't hit DB again.</td></tr>
+    <tr><td class="ln">46</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> { error: <span class="str">'Room not found...'</span> };</td><td class="ann">Room doesn't exist anywhere. Return error object — NOT an exception. Caller checks result.error.</td></tr>
+    <tr><td class="ln">49</td><td class="code">  <span class="kw">if</span> (room.users.<span class="fn">includes</span>(socketId)) <span class="kw">return</span> { room };</td><td class="ann good">Idempotent: same socket joining twice (e.g. duplicate emit) is treated as success, not an error.</td></tr>
+    <tr><td class="ln">51</td><td class="code">  <span class="kw">if</span> (room.users.length &gt;= <span class="num">2</span>) <span class="kw">return</span> { error: <span class="str">'Room is full...'</span> };</td><td class="ann">Hard capacity limit of 2. Third player gets an error.</td></tr>
+    <tr><td class="ln">53</td><td class="code">  room.users.<span class="fn">push</span>(socketId);</td><td class="ann">Add joiner to users array.</td></tr>
+    <tr><td class="ln">54</td><td class="code">  room.votes[socketId] = {};</td><td class="ann">Initialize joiner's vote record. Creator's was set in createRoom.</td></tr>
+    <tr><td class="ln">55</td><td class="code">  <span class="kw">return</span> { room };</td><td class="ann">Returns the room object so index.js can access room.id and room.movies.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">exported</span> <span class="fname">recordVote(roomId, socketId, movieId, liked)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Records one player's like or pass for a movie. If both players liked the same movie, adds it to the matches array immediately — but matches are only <em>revealed</em> to players when both are done (via <code>markDone</code>).
+  </div>
+  <table class="ct">
+    <tr><td class="ln">69</td><td class="code"><span class="kw">export function</span> <span class="fn">recordVote</span>(roomId, socketId, movieId, liked) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">70</td><td class="code">  <span class="kw">const</span> room = rooms.<span class="fn">get</span>(roomId);</td><td class="ann"></td></tr>
+    <tr><td class="ln">71</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span>;</td><td class="ann">Room might not exist if server restarted and the client is still sending votes. Silently ignore.</td></tr>
+    <tr><td class="ln">73</td><td class="code">  <span class="kw">if</span> (!room.votes[socketId]) room.votes[socketId] = {};</td><td class="ann warn">Defensive init — shouldn't be needed since createRoom/joinRoom always initializes votes, but handles edge cases like DB-restored rooms.</td></tr>
+    <tr><td class="ln">74</td><td class="code">  room.votes[socketId][movieId] = liked;</td><td class="ann key">Stores the vote. movieId is the TMDB numeric ID. liked is boolean. e.g. votes["abc123"] = { 550: true, 27205: false }</td></tr>
+    <tr><td class="ln">76</td><td class="code">  <span class="kw">if</span> (!liked) <span class="kw">return</span>;</td><td class="ann">Pass votes can never be matches. Skip the match check entirely.</td></tr>
+    <tr><td class="ln">78</td><td class="code">  <span class="kw">const</span> other = room.users.<span class="fn">find</span>(id =&gt; id !== socketId);</td><td class="ann">Finds the OTHER player's socket ID in the 2-element users array.</td></tr>
+    <tr><td class="ln">79</td><td class="code">  <span class="kw">if</span> (other &amp;&amp; room.votes[other]?.[movieId] === <span class="kw2">true</span>) {</td><td class="ann key">Optional chaining (?.) handles the case where other player hasn't voted yet (votes[other] would be undefined). === true is strict — won't match undefined.</td></tr>
+    <tr><td class="ln">80</td><td class="code">    <span class="kw">const</span> movie = room.movies.<span class="fn">find</span>(m =&gt; <span class="bi">String</span>(m.id) === <span class="bi">String</span>(movieId));</td><td class="ann warn">String() conversion on both sides — movieId from the client might come as a string "550" while TMDB IDs are numbers 550. This makes the comparison type-safe.</td></tr>
+    <tr><td class="ln">81</td><td class="code">    <span class="kw">if</span> (movie) room.matches.<span class="fn">push</span>(movie);</td><td class="ann important">Match detected! Pushed to matches array. NOT broadcast yet — held until both players finish (markDone).</td></tr>
+  </table>
+
+  <div class="explain explain-yellow">
+    <h4>Why hold matches until both players finish?</h4>
+    <p>If matches were broadcast immediately when detected, Player A (who finished quickly) would know what Player B liked before B was done. This would be a spoiler — B might even change their votes strategically. The "hold until done" design preserves the mutual surprise. The match detection still runs in real time, but the reveal is deferred.</p>
+  </div>
+
+  <div class="func-divider"><span class="fkind">exported</span> <span class="fname">markDone(roomId, socketId)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Called when a player swipes their last movie. Adds them to the <code>done</code> Set. Returns the matches array ONLY when all players are done — otherwise returns null. This is the gate that controls when matches are revealed.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">87</td><td class="code"><span class="kw">export function</span> <span class="fn">markDone</span>(roomId, socketId) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">88</td><td class="code">  <span class="kw">const</span> room = rooms.<span class="fn">get</span>(roomId);</td><td class="ann"></td></tr>
+    <tr><td class="ln">89</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann"></td></tr>
+    <tr><td class="ln">91</td><td class="code">  room.done.<span class="fn">add</span>(socketId);</td><td class="ann key">Set.add is idempotent — adding the same socketId twice doesn't create a duplicate.</td></tr>
+    <tr><td class="ln">93</td><td class="code">  <span class="kw">const</span> allDone = room.users.length &gt; <span class="num">0</span> &amp;&amp; room.users.<span class="fn">every</span>(id =&gt; room.done.<span class="fn">has</span>(id));</td><td class="ann key">every() returns true only if ALL users are in the done Set. length > 0 prevents a bug where an empty room would be considered "done".</td></tr>
+    <tr><td class="ln">94</td><td class="code">  <span class="kw">return</span> allDone ? room.matches : <span class="kw2">null</span>;</td><td class="ann important">Returns matches (possibly empty array []) only when everyone is done. null = still waiting. Caller (index.js) checks for null before broadcasting.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">exported</span> <span class="fname">removeUser(socketId)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Called on socket disconnect. Removes the player from the room. If the room becomes empty, schedules a 2-hour cleanup timer to delete it from memory (and optionally from the DB).
+  </div>
+  <table class="ct">
+    <tr><td class="ln">97</td><td class="code"><span class="kw">export function</span> <span class="fn">removeUser</span>(socketId) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">98</td><td class="code">  <span class="kw">const</span> room = <span class="fn">getRoomBySocket</span>(socketId);</td><td class="ann warn">Linear scan O(n rooms). Only called on disconnect so performance isn't critical, but would become a concern at massive scale.</td></tr>
+    <tr><td class="ln">99</td><td class="code">  <span class="kw">if</span> (!room) <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann">Player wasn't in any room (e.g. disconnected before joining).</td></tr>
+    <tr><td class="ln">101</td><td class="code">  room.users = room.users.<span class="fn">filter</span>(id =&gt; id !== socketId);</td><td class="ann">Remove this socket from users array.</td></tr>
+    <tr><td class="ln">102</td><td class="code">  <span class="kw">delete</span> room.votes[socketId];</td><td class="ann">Clean up their vote history.</td></tr>
+    <tr><td class="ln">104</td><td class="code">  <span class="kw">if</span> (room.users.length === <span class="num">0</span>) {</td><td class="ann">Both players left — schedule cleanup.</td></tr>
+    <tr><td class="ln">105</td><td class="code">    <span class="kw">const</span> ROOM_TTL_MS = <span class="num">2</span> * <span class="num">60</span> * <span class="num">60</span> * <span class="num">1000</span>;</td><td class="ann">2 hours in milliseconds. Named constant rather than magic number 7200000.</td></tr>
+    <tr><td class="ln">106</td><td class="code">    <span class="fn">setTimeout</span>(<span class="kw">async</span> () =&gt; {</td><td class="ann good">Delayed cleanup — gives players a chance to reconnect. Not immediate deletion.</td></tr>
+    <tr><td class="ln">107</td><td class="code">      <span class="kw">if</span> (rooms.<span class="fn">get</span>(room.id)?.users.length === <span class="num">0</span>) {</td><td class="ann key">Re-checks that room is still empty after TTL. A player might have rejoined in the 2 hours — in which case we don't delete.</td></tr>
+    <tr><td class="ln">108</td><td class="code">        rooms.<span class="fn">delete</span>(room.id);</td><td class="ann">Remove from in-memory Map.</td></tr>
+    <tr><td class="ln">109</td><td class="code">        <span class="kw">if</span> (pool) <span class="kw">await</span> pool.<span class="fn">query</span>(<span class="str">'DELETE FROM rooms WHERE id = $1'</span>, [room.id])</td><td class="ann">Optionally remove from Postgres too.</td></tr>
+    <tr><td class="ln">114</td><td class="code">    }, ROOM_TTL_MS);</td><td class="ann"></td></tr>
+    <tr><td class="ln">115</td><td class="code">    <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann">Returns null when room is empty — caller (index.js) won't emit partner-disconnected to an empty room.</td></tr>
+    <tr><td class="ln">118</td><td class="code">  <span class="kw">return</span> room;</td><td class="ann">Returns the room when one player is still present — caller emits partner-disconnected to the remaining player.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ index.js ═══════════════════════════════ -->
+<div id="sec-index">
+<div class="flow-arrow">↓ index.js wires socket events to the room manager ↓</div>
+<div class="file-header f-index">
+  <span class="file-badge f-index" style="font-size:11px">index.js</span>
+  <div>
+    <div class="file-title">server/index.js</div>
+    <div class="file-desc">Express + Socket.io server entry point. All socket event handlers live here. Delegates all business logic to roomManager.js and tmdb.js.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">setup</span> <span class="fname">server initialization</span></div>
+  <table class="ct">
+    <tr><td class="ln">1</td><td class="code"><span class="kw">import</span> <span class="str">'dotenv/config'</span>;</td><td class="ann key">Loads server/.env into process.env automatically. Must be first import so TMDB_API_KEY and DATABASE_URL are available.</td></tr>
+    <tr><td class="ln">2</td><td class="code"><span class="kw">import</span> express <span class="kw">from</span> <span class="str">'express'</span>;</td><td class="ann">Express — HTTP server framework. Minimal usage here: just CORS and a health check route.</td></tr>
+    <tr><td class="ln">3</td><td class="code"><span class="kw">import</span> { createServer } <span class="kw">from</span> <span class="str">'http'</span>;</td><td class="ann">Node.js built-in HTTP server. Socket.io needs a raw http.Server, not the Express app directly.</td></tr>
+    <tr><td class="ln">4</td><td class="code"><span class="kw">import</span> { Server } <span class="kw">from</span> <span class="str">'socket.io'</span>;</td><td class="ann">Socket.io server class. Wraps the http.Server to add WebSocket support.</td></tr>
+    <tr><td class="ln">5</td><td class="code"><span class="kw">import</span> cors <span class="kw">from</span> <span class="str">'cors'</span>;</td><td class="ann warn">CORS middleware — allows the client on localhost:5173 (or Vercel) to make requests to the server. Without this, browsers block cross-origin requests.</td></tr>
+    <tr><td class="ln">19</td><td class="code">app.<span class="fn">use</span>(<span class="fn">cors</span>());</td><td class="ann">Applies CORS to all Express routes. Origin: '*' means any domain can connect.</td></tr>
+    <tr><td class="ln">21</td><td class="code"><span class="kw">const</span> httpServer = <span class="fn">createServer</span>(app);</td><td class="ann key">Creates the underlying http.Server from the Express app. Socket.io attaches to this.</td></tr>
+    <tr><td class="ln">22</td><td class="code"><span class="kw">const</span> io = <span class="kw">new</span> <span class="fn">Server</span>(httpServer, { cors: { origin: <span class="str">'*'</span> } });</td><td class="ann">Socket.io server with its own CORS config. Both app and io need CORS separately.</td></tr>
+    <tr><td class="ln">29</td><td class="code">app.<span class="fn">get</span>(<span class="str">'/health'</span>, (_req, res) =&gt; res.<span class="fn">json</span>({ ok: <span class="kw2">true</span> }));</td><td class="ann">Railway uses this to check if the server is alive. Returns 200 JSON. _req underscore prefix = unused parameter.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">socket handler</span> <span class="fname">create-room</span></div>
+  <table class="ct">
+    <tr><td class="ln">31</td><td class="code">io.<span class="fn">on</span>(<span class="str">'connection'</span>, (socket) =&gt; {</td><td class="ann key">Fires for every new socket connection. 'socket' is the individual client's connection — different from 'io' which represents all clients.</td></tr>
+    <tr><td class="ln">35</td><td class="code">  socket.<span class="fn">on</span>(<span class="str">'create-room'</span>, <span class="kw">async</span> ({ genreId, ... } = {}) =&gt; {</td><td class="ann">= {} default handles the case where client sends no payload. Destructures all filter params.</td></tr>
+    <tr><td class="ln">36</td><td class="code">    <span class="kw">if</span> (!TMDB_API_KEY) { socket.<span class="fn">emit</span>(<span class="str">'error'</span>, <span class="str">'Server is missing...'</span>); <span class="kw">return</span>; }</td><td class="ann warn">Immediate guard — emits a meaningful error to the client rather than crashing with a runtime error on the fetch call.</td></tr>
+    <tr><td class="ln">41</td><td class="code">      <span class="kw">const</span> movies = <span class="kw">await</span> <span class="fn">fetchMovies</span>(TMDB_API_KEY, genreId || <span class="kw2">null</span>, { ... });</td><td class="ann">genreId || null converts falsy genreId (0, '', undefined) to null. fetchMovies defined in tmdb.js.</td></tr>
+    <tr><td class="ln">42</td><td class="code">      <span class="kw">if</span> (movies.length === <span class="num">0</span>) { socket.<span class="fn">emit</span>(<span class="str">'error'</span>, <span class="str">'No movies found...'</span>); <span class="kw">return</span>; }</td><td class="ann">Very strict filters can return 0 movies. Handled gracefully with an error to the client.</td></tr>
+    <tr><td class="ln">46</td><td class="code">      <span class="kw">const</span> roomId = <span class="kw">await</span> <span class="fn">createRoom</span>(socket.id, movies);</td><td class="ann">createRoom defined in roomManager.js. Returns the 6-char room code.</td></tr>
+    <tr><td class="ln">47</td><td class="code">      socket.<span class="fn">join</span>(roomId);</td><td class="ann key">Socket.io "room" — allows broadcasting to all sockets in a room with io.to(roomId).emit(). Separate concept from the app's room object.</td></tr>
+    <tr><td class="ln">48</td><td class="code">      socket.<span class="fn">emit</span>(<span class="str">'room-created'</span>, { roomId, movies });</td><td class="ann">Sends movies to the creator so they can start swiping immediately without another request.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">socket handler</span> <span class="fname">join-room</span></div>
+  <table class="ct">
+    <tr><td class="ln">57</td><td class="code">  socket.<span class="fn">on</span>(<span class="str">'join-room'</span>, <span class="kw">async</span> (code) =&gt; {</td><td class="ann"></td></tr>
+    <tr><td class="ln">58</td><td class="code">    <span class="kw">const</span> upperCode = (code || <span class="str">''</span>).<span class="fn">toUpperCase</span>().<span class="fn">trim</span>();</td><td class="ann">Normalizes to uppercase and strips whitespace. || '' handles undefined/null code.</td></tr>
+    <tr><td class="ln">59</td><td class="code">    <span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">joinRoom</span>(upperCode, socket.id);</td><td class="ann">joinRoom defined in roomManager.js. Returns { room } or { error }.</td></tr>
+    <tr><td class="ln">61</td><td class="code">    <span class="kw">if</span> (result.error) { socket.<span class="fn">emit</span>(<span class="str">'error'</span>, result.error); <span class="kw">return</span>; }</td><td class="ann">Propagates error string to client. Client shows it as a red message in the UI.</td></tr>
+    <tr><td class="ln">67</td><td class="code">    socket.<span class="fn">emit</span>(<span class="str">'room-joined'</span>, { roomId: room.id, movies: room.movies });</td><td class="ann">Send the movie list to the joiner so they can start swiping.</td></tr>
+    <tr><td class="ln">71</td><td class="code">    <span class="kw">const</span> creatorId = room.users.<span class="fn">find</span>(id =&gt; id !== socket.id);</td><td class="ann">Finds the creator (the other user in the room). Used to confirm they're still connected.</td></tr>
+    <tr><td class="ln">73</td><td class="code">      socket.<span class="fn">to</span>(room.id).<span class="fn">emit</span>(<span class="str">'partner-joined'</span>);</td><td class="ann key">socket.to(room.id) sends to everyone in the Socket.io room EXCEPT this socket — so the creator gets notified.</td></tr>
+    <tr><td class="ln">74</td><td class="code">      socket.<span class="fn">emit</span>(<span class="str">'partner-joined'</span>);</td><td class="ann">Also tell the joiner that the creator is present. Both players get partner-joined so both show the "connected" banner.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">socket handler</span> <span class="fname">vote / player-done / disconnect</span></div>
+  <table class="ct">
+    <tr><td class="ln">80</td><td class="code">  socket.<span class="fn">on</span>(<span class="str">'vote'</span>, ({ roomId, movieId, liked }) =&gt; {</td><td class="ann"></td></tr>
+    <tr><td class="ln">81</td><td class="code">    <span class="fn">recordVote</span>(roomId, socket.id, movieId, liked);</td><td class="ann">Pure business logic delegated to roomManager. No response needed — client advances immediately without waiting.</td></tr>
+    <tr><td class="ln">85</td><td class="code">  socket.<span class="fn">on</span>(<span class="str">'player-done'</span>, (roomId) =&gt; {</td><td class="ann"></td></tr>
+    <tr><td class="ln">86</td><td class="code">    <span class="kw">const</span> matches = <span class="fn">markDone</span>(roomId, socket.id);</td><td class="ann">Returns matches array (possibly []) when all done, or null if still waiting.</td></tr>
+    <tr><td class="ln">87</td><td class="code">    <span class="kw">if</span> (matches !== <span class="kw2">null</span>) {</td><td class="ann key">Must check !== null explicitly — an empty matches array [] is falsy but means "all done, no matches". If we checked !matches, we'd miss the "no match" case.</td></tr>
+    <tr><td class="ln">88</td><td class="code">      io.<span class="fn">to</span>(roomId).<span class="fn">emit</span>(<span class="str">'all-done'</span>, matches);</td><td class="ann important">io.to() broadcasts to ALL sockets in the room (including sender). Both players get the matches list simultaneously.</td></tr>
+    <tr><td class="ln">94</td><td class="code">  socket.<span class="fn">on</span>(<span class="str">'disconnect'</span>, () =&gt; {</td><td class="ann">Socket.io fires this automatically when TCP connection drops (tab close, network loss, etc.).</td></tr>
+    <tr><td class="ln">96</td><td class="code">    <span class="kw">const</span> room = <span class="fn">removeUser</span>(socket.id);</td><td class="ann">Removes socket from room. Returns the room if partner is still there, null if room is empty.</td></tr>
+    <tr><td class="ln">97</td><td class="code">    <span class="kw">if</span> (room) { io.<span class="fn">to</span>(room.id).<span class="fn">emit</span>(<span class="str">'partner-disconnected'</span>); }</td><td class="ann">Notifies the remaining partner. They see the "partner disconnected" banner.</td></tr>
+    <tr><td class="ln">103</td><td class="code"><span class="fn">initSchema</span>().<span class="fn">then</span>(...).catch(...);</td><td class="ann good">Called at module top-level (server startup). Creates DB table if needed. Error is logged but doesn't crash the server.</td></tr>
+    <tr><td class="ln">107</td><td class="code">httpServer.<span class="fn">listen</span>(PORT, ...);</td><td class="ann">Starts the HTTP server. Railway injects PORT; defaults to 3001 locally.</td></tr>
+  </table>
+</div>
+
+<div class="explain explain-orange">
+  <h4>io.to() vs socket.to() vs socket.emit()</h4>
+  <ul style="margin-left:18px;margin-top:6px;line-height:2">
+    <li><code>socket.emit('x', data)</code> — sends only to THIS socket (the caller)</li>
+    <li><code>socket.to(room).emit('x', data)</code> — sends to everyone in room EXCEPT this socket</li>
+    <li><code>io.to(room).emit('x', data)</code> — sends to EVERYONE in room including this socket</li>
+  </ul>
+  <p style="margin-top:8px">The app uses all three: <code>socket.emit</code> for private responses (room-created, room-joined), <code>socket.to</code> for notifications to the other player (partner-joined from joiner's side), and <code>io.to</code> for broadcast-to-all (all-done, partner-disconnected).</p>
+</div>
+
+<!-- ═══════════════════════════════ socket.js ═══════════════════════════════ -->
+<div id="sec-socket">
+<div class="flow-arrow">↓ Frontend — socket.js is the bridge between client and server ↓</div>
+<div class="file-header f-socket">
+  <span class="file-badge f-socket" style="font-size:11px">socket.js</span>
+  <div>
+    <div class="file-title">client/src/socket.js</div>
+    <div class="file-desc">Singleton Socket.io client. Created once at module load, shared across all React components via import.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <table class="ct">
+    <tr><td class="ln">1</td><td class="code"><span class="kw">import</span> { io } <span class="kw">from</span> <span class="str">'socket.io-client'</span>;</td><td class="ann">Client-side Socket.io library. io() creates a socket that connects to the server.</td></tr>
+    <tr><td class="ln">3</td><td class="code"><span class="kw">const</span> SERVER_URL = <span class="kw2">import</span>.meta.env.<span class="va">VITE_SERVER_URL</span> || <span class="str">'http://localhost:3001'</span>;</td><td class="ann key">import.meta.env is Vite's way to access environment variables. VITE_ prefix required for client-side vars. Falls back to localhost for local dev.</td></tr>
+    <tr><td class="ln">5</td><td class="code"><span class="kw">const</span> socket = <span class="fn">io</span>(SERVER_URL, { autoConnect: <span class="kw2">false</span> });</td><td class="ann important">autoConnect: false — socket is CREATED but NOT connected. Connection happens in Home's useEffect. This prevents a connection spike on every import.</td></tr>
+    <tr><td class="ln">7</td><td class="code"><span class="kw">export default</span> socket;</td><td class="ann good">Default export of the same instance. Every file that imports socket.js gets the exact same socket object — the singleton pattern.</td></tr>
+  </table>
+</div>
+<div class="explain explain-cyan">
+  <h4>Why a Singleton Socket?</h4>
+  <p>JavaScript ES module imports are cached — the same module instance is returned every time. So <code>import socket from '../socket.js'</code> in Home.jsx and Room.jsx returns the <em>same</em> socket object. This means:</p>
+  <ul style="margin-left:18px;margin-top:6px;line-height:2">
+    <li>No need for React Context or global state to share the socket</li>
+    <li>Events registered in one component fire even when the component re-renders</li>
+    <li>The socket stays connected across route changes (Home → Room)</li>
+  </ul>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ main.jsx ═══════════════════════════════ -->
+<div id="sec-main">
+<div class="file-header f-app">
+  <span class="file-badge f-app" style="font-size:11px">main.jsx</span>
+  <div>
+    <div class="file-title">client/src/main.jsx</div>
+    <div class="file-desc">React entry point. Creates the root and wraps the app in BrowserRouter and StrictMode.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <table class="ct">
+    <tr><td class="ln">7</td><td class="code"><span class="bi">ReactDOM</span>.<span class="fn">createRoot</span>(<span class="bi">document</span>.<span class="fn">getElementById</span>(<span class="str">'root'</span>)).<span class="fn">render</span>(</td><td class="ann key">React 18 API. createRoot enables concurrent features. getElementById('root') targets the div in index.html.</td></tr>
+    <tr><td class="ln">8</td><td class="code">  &lt;<span class="fn">React.StrictMode</span>&gt;</td><td class="ann warn">StrictMode renders components twice in development to detect side effects. This is why you might see duplicate console.logs locally.</td></tr>
+    <tr><td class="ln">9</td><td class="code">    &lt;<span class="fn">BrowserRouter</span>&gt;</td><td class="ann">Provides React Router context. Uses the browser's History API for navigation (pushState, not hash).</td></tr>
+    <tr><td class="ln">10</td><td class="code">      &lt;<span class="fn">App</span> /&gt;</td><td class="ann">The root component — handles routing. Defined in App.jsx.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ App.jsx ═══════════════════════════════ -->
+<div id="sec-home" style="margin-top:8px">
+<div class="file-header f-app">
+  <span class="file-badge f-app" style="font-size:11px">App.jsx</span>
+  <div>
+    <div class="file-title">client/src/App.jsx</div>
+    <div class="file-desc">React Router setup. Two routes and a catch-all redirect. The entire app's navigation is defined here.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <table class="ct">
+    <tr><td class="ln">8</td><td class="code">&lt;<span class="fn">Route</span> path=<span class="str">"/"</span> element={&lt;<span class="fn">Home</span> /&gt;} /&gt;</td><td class="ann">The landing page — room creation and joining.</td></tr>
+    <tr><td class="ln">9</td><td class="code">&lt;<span class="fn">Route</span> path=<span class="str">"/room/:roomId"</span> element={&lt;<span class="fn">Room</span> /&gt;} /&gt;</td><td class="ann key">:roomId is a URL param. Room.jsx reads it with useParams(). Direct URL navigation (/room/ABCDEF) triggers a join-room emit.</td></tr>
+    <tr><td class="ln">10</td><td class="code">&lt;<span class="fn">Route</span> path=<span class="str">"*"</span> element={&lt;<span class="fn">Navigate</span> to=<span class="str">"/"</span> replace /&gt;} /&gt;</td><td class="ann">Catch-all. Any unknown path redirects to home. replace prevents a back-button loop.</td></tr>
+  </table>
+</div>
+</div>
+
+<!-- ═══════════════════════════════ Home.jsx ═══════════════════════════════ -->
+<div class="flow-arrow">↓ Home.jsx — room creation and joining UI ↓</div>
+<div class="file-header f-home">
+  <span class="file-badge f-home" style="font-size:11px">Home.jsx</span>
+  <div>
+    <div class="file-title">client/src/pages/Home.jsx</div>
+    <div class="file-desc">Landing page with two flows: Create Room (with filter form) and Join Room. Also contains the canvas particle animation and sub-components.</div>
+  </div>
+</div>
+<div class="code-wrap">
+
+  <div class="func-divider"><span class="fkind">component</span> <span class="fname">YearRangeSlider</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this component does</span>
+    Renders two HTML range inputs stacked on top of each other to create a dual-handle slider. The "From" handle controls the minimum year; the "To" handle controls the maximum. A gold gradient fills the selected range between them.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">44</td><td class="code"><span class="kw">const</span> from = yearFrom ? <span class="fn">parseInt</span>(yearFrom) : YEAR_MIN;</td><td class="ann">yearFrom is a string (from state) or '' for "any". parseInt converts it; empty string falls back to YEAR_MIN (1900).</td></tr>
+    <tr><td class="ln">47</td><td class="code"><span class="kw">const</span> fromPct = ((from - YEAR_MIN) / (YEAR_MAX - YEAR_MIN)) * <span class="num">100</span>;</td><td class="ann key">Converts year to a percentage of the slider width. Used to position the gold fill div (left: fromPct%).</td></tr>
+    <tr><td class="ln">55</td><td class="code"><span class="kw">const</span> TICKS = [<span class="num">1920</span>, <span class="num">1940</span>, <span class="num">1960</span>, <span class="num">1980</span>, <span class="num">2000</span>, <span class="num">2020</span>];</td><td class="ann">Decade tick marks rendered as tiny divs. Taller (8px) when inside the selected range, shorter (5px) when outside.</td></tr>
+    <tr><td class="ln">111</td><td class="code">className=<span class="str">"year-range-input"</span> style={{ zIndex: from &gt; YEAR_MAX - <span class="num">15</span> ? <span class="num">5</span> : <span class="num">3</span> }}</td><td class="ann warn">When "from" is near YEAR_MAX, it needs higher z-index so it's clickable over the "to" handle. Otherwise both handles are at the same position and only one is interactive.</td></tr>
+  </table>
+
+  <div class="explain explain-orange">
+    <h4>Dual Range Slider — Two Overlapping &lt;input type="range"&gt;</h4>
+    <p>There's no native HTML dual-handle slider. The trick: two <code>&lt;input type="range"&gt;</code> elements are absolutely positioned on top of each other with <code>background: transparent</code>. Only the thumb (the draggable circle) responds to interaction — the track is invisible. A separate <code>&lt;div&gt;</code> with a gold gradient is positioned using the computed percentages to visually show the selected range.</p>
+    <p>The <code>pointer-events: none</code> on the input and <code>pointer-events: all</code> on <code>::-webkit-slider-thumb</code> ensures only the thumbs are interactive, not the underlying track.</p>
+  </div>
+
+  <div class="func-divider"><span class="fkind">component</span> <span class="fname">CinemaParticles</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this component does</span>
+    Renders a fullscreen canvas that animates 110 floating dust particles and 6 large blurred bokeh circles using requestAnimationFrame. Gives the home screen its atmospheric "cinema" feel. Purely decorative — pointer-events none.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">181</td><td class="code">  <span class="kw">useEffect</span>(() =&gt; {</td><td class="ann key">Canvas setup in useEffect — runs after mount so canvasRef.current is available. Returns cleanup to cancel the animation loop.</td></tr>
+    <tr><td class="ln">191</td><td class="code">    <span class="kw">const</span> particles = <span class="bi">Array</span>.<span class="fn">from</span>({ length: <span class="num">110</span> }, () =&gt; ({ ... }));</td><td class="ann">Creates 110 particle objects with random position, size, velocity, opacity, and phase. Array.from with length creates a sparse array mapped by the callback.</td></tr>
+    <tr><td class="ln">203</td><td class="code">    col: i % <span class="num">2</span> === <span class="num">0</span> ? [<span class="num">232</span>, <span class="num">192</span>, <span class="num">90</span>] : [<span class="num">115</span>, <span class="num">65</span>, <span class="num">175</span>],</td><td class="ann">Alternating gold and purple bokeh — matches the app's design system colors (#e8c05a and the noir-600 purple).</td></tr>
+    <tr><td class="ln">223</td><td class="code">        <span class="kw">const</span> op = p.baseOp * (<span class="num">0.35</span> + <span class="num">0.65</span> * <span class="bi">Math</span>.<span class="fn">abs</span>(<span class="bi">Math</span>.<span class="fn">sin</span>(p.phase)));</td><td class="ann key">Each particle's opacity pulses between 35% and 100% of its base opacity using sin(phase). Math.abs ensures no negative opacity. Gives the "breathing" effect.</td></tr>
+    <tr><td class="ln">227</td><td class="code">      raf = <span class="fn">requestAnimationFrame</span>(draw);</td><td class="ann">Recursive — each frame schedules the next. requestAnimationFrame syncs to the monitor refresh rate (~60fps). Stored in raf so it can be cancelled on unmount.</td></tr>
+    <tr><td class="ln">230</td><td class="code">    <span class="kw">return</span> () =&gt; { <span class="fn">cancelAnimationFrame</span>(raf); window.<span class="fn">removeEventListener</span>(<span class="str">'resize'</span>, onResize); };</td><td class="ann good">Cleanup function: cancels animation and removes resize listener. Without this, the animation would continue running after the component unmounts, causing a memory leak.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">component</span> <span class="fname">Home (main)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this component does</span>
+    The landing page. Manages a 3-state UI: initial mode picker, create flow (with filter form), and join flow. Connects the socket on mount and listens for server responses to navigate to the room.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">252</td><td class="code">  <span class="kw">useEffect</span>(() =&gt; {</td><td class="ann"></td></tr>
+    <tr><td class="ln">253</td><td class="code">    socket.<span class="fn">connect</span>();</td><td class="ann key">Triggers the actual WebSocket handshake. autoConnect was false on creation, so this is the intentional connect point.</td></tr>
+    <tr><td class="ln">255</td><td class="code">    socket.<span class="fn">on</span>(<span class="str">'room-created'</span>, ({ roomId, movies }) =&gt; {</td><td class="ann"></td></tr>
+    <tr><td class="ln">256</td><td class="code">      <span class="bi">sessionStorage</span>.<span class="fn">setItem</span>(<span class="str">'movies'</span>, <span class="bi">JSON</span>.<span class="fn">stringify</span>(movies));</td><td class="ann important">Persists movies to sessionStorage. This is why movies survive a page refresh within the same tab — Room.jsx reads them back from sessionStorage on mount.</td></tr>
+    <tr><td class="ln">272</td><td class="code">    <span class="kw">return</span> () =&gt; { socket.<span class="fn">off</span>(<span class="str">'room-created'</span>); socket.<span class="fn">off</span>(<span class="str">'room-joined'</span>); socket.<span class="fn">off</span>(<span class="str">'error'</span>); };</td><td class="ann warn">Cleanup removes listeners on unmount. Without this, navigating back to Home and re-mounting would register a second listener, causing duplicate handler calls.</td></tr>
+  </table>
+
+  <table class="ct">
+    <tr><td class="ln">279</td><td class="code">  <span class="kw">function</span> <span class="fn">handleCreate</span>() {</td><td class="ann"></td></tr>
+    <tr><td class="ln">282</td><td class="code">    socket.<span class="fn">emit</span>(<span class="str">'create-room'</span>, {</td><td class="ann"></td></tr>
+    <tr><td class="ln">283</td><td class="code">      genreId: selectedGenre.id,</td><td class="ann">null for "All Genres" — TMDB treats null/absent differently from a numeric ID.</td></tr>
+    <tr><td class="ln">284</td><td class="code">      yearFrom: yearFrom ? <span class="fn">parseInt</span>(yearFrom) : <span class="kw2">undefined</span>,</td><td class="ann key">undefined is omitted from JSON serialization. An empty yearFrom would send 0 to the server, which would add a useless filter. undefined → filter not applied at all.</td></tr>
+    <tr><td class="ln">289</td><td class="code">      certification: ageRating !== <span class="str">'Any'</span> ? ageRating : <span class="kw2">undefined</span>,</td><td class="ann">Only add certification filter if a specific rating was chosen.</td></tr>
+  </table>
+
+  <table class="ct">
+    <tr><td class="ln">294</td><td class="code">  <span class="kw">function</span> <span class="fn">handleJoin</span>(e) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">295</td><td class="code">    e.<span class="fn">preventDefault</span>();</td><td class="ann">Prevents form submission from reloading the page.</td></tr>
+    <tr><td class="ln">298</td><td class="code">      <span class="kw">const</span> url = <span class="kw">new</span> <span class="fn">URL</span>(joinCode);</td><td class="ann key">new URL() throws if the string isn't a valid URL. This try/catch detects whether the input is a URL or a bare room code.</td></tr>
+    <tr><td class="ln">299</td><td class="code">      <span class="kw">const</span> parts = url.pathname.<span class="fn">split</span>(<span class="str">'/'</span>).<span class="fn">filter</span>(<span class="bi">Boolean</span>);</td><td class="ann">.split('/') → ['', 'room', 'ABCDEF']. filter(Boolean) removes empty strings → ['room', 'ABCDEF']. Last element is the code.</td></tr>
+    <tr><td class="ln">300</td><td class="code">      joinCode = parts[parts.length - <span class="num">1</span>];</td><td class="ann">Extracts the last segment of the URL path — the room code.</td></tr>
+    <tr><td class="ln">301</td><td class="code">    } <span class="kw">catch</span> {}</td><td class="ann good">Empty catch — if new URL() throws (bare code, not a URL), joinCode remains unchanged. No action needed.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════ Room.jsx ═══════════════════════════════ -->
+<div id="sec-roompage">
+<div class="flow-arrow">↓ Room.jsx — the main swiping screen ↓</div>
+<div class="file-header f-roompage">
+  <span class="file-badge f-roompage" style="font-size:11px">Room.jsx</span>
+  <div>
+    <div class="file-title">client/src/pages/Room.jsx</div>
+    <div class="file-desc">The swiping screen. Manages 5 socket events, a 7-variable state machine, and progressive game stages (swiping → local done → both done → results).</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">state initialization</span></div>
+  <table class="ct">
+    <tr><td class="ln">10</td><td class="code">  <span class="kw">const</span> [movies, setMovies] = <span class="fn">useState</span>(() =&gt; { <span class="kw">try</span> { <span class="kw">return</span> <span class="bi">JSON</span>.<span class="fn">parse</span>(...); } <span class="kw">catch</span> { <span class="kw">return</span> []; } });</td><td class="ann key">Lazy initializer function passed to useState — runs once on mount, not on every render. Reads from sessionStorage so movies survive page refresh.</td></tr>
+    <tr><td class="ln">18</td><td class="code">  <span class="kw">const</span> [index, setIndex] = <span class="fn">useState</span>(<span class="num">0</span>);</td><td class="ann">Which movie card is currently shown. Increments on each vote.</td></tr>
+    <tr><td class="ln">19</td><td class="code">  <span class="kw">const</span> [voted, setVoted] = <span class="fn">useState</span>(<span class="kw2">false</span>);</td><td class="ann">Prevents double-voting on the same card while the exit animation plays.</td></tr>
+    <tr><td class="ln">23</td><td class="code">  <span class="kw">const</span> [localDone, setLocalDone] = <span class="fn">useState</span>(<span class="kw2">false</span>);</td><td class="ann important">True when THIS player finished swiping. Shows the "waiting for partner" screen.</td></tr>
+    <tr><td class="ln">24</td><td class="code">  <span class="kw">const</span> [done, setDone] = <span class="fn">useState</span>(<span class="kw2">false</span>);</td><td class="ann important">True when BOTH players are done. Shows the results screen.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">socket setup</span> <span class="fname">useEffect</span></div>
+  <table class="ct">
+    <tr><td class="ln">30</td><td class="code">    <span class="kw">if</span> (!socket.connected) socket.<span class="fn">connect</span>();</td><td class="ann">Connect if not already connected. Handles direct URL navigation (socket wasn't connected in Home).</td></tr>
+    <tr><td class="ln">35</td><td class="code">    socket.<span class="fn">emit</span>(<span class="str">'join-room'</span>, roomId);</td><td class="ann key">Always emits join-room on mount. Critical for: (1) direct URL access, (2) server restart recovery — re-registers the socket with the room.</td></tr>
+    <tr><td class="ln">38</td><td class="code">    <span class="kw">function</span> <span class="fn">handleReconnect</span>() { socket.<span class="fn">emit</span>(<span class="str">'join-room'</span>, roomId); }</td><td class="ann warn">On reconnect, socket ID changes. The server won't know this socket's new ID. Re-emitting join-room re-registers the new socket ID with the room.</td></tr>
+    <tr><td class="ln">41</td><td class="code">    socket.<span class="fn">on</span>(<span class="str">'connect'</span>, handleReconnect);</td><td class="ann">Handles the reconnect case. 'connect' fires both on initial connection and reconnections.</td></tr>
+    <tr><td class="ln">55</td><td class="code">    socket.<span class="fn">on</span>(<span class="str">'all-done'</span>, (m) =&gt; { setMatches(m); setDone(<span class="kw2">true</span>); });</td><td class="ann">Server sends the matches array. Sets done=true to show the results screen.</td></tr>
+    <tr><td class="ln">64</td><td class="code">    socket.<span class="fn">on</span>(<span class="str">'error'</span>, () =&gt; { <span class="fn">navigate</span>(<span class="str">'/'</span>, { replace: <span class="kw2">true</span> }); });</td><td class="ann">Server error (e.g. room not found) → redirect to home. replace prevents back-button returning to broken room.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">callback</span> <span class="fname">handleVote(liked)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Called when the user swipes or clicks a button. Records the vote by emitting to the server, then advances to the next movie — or, if this was the last movie, marks this player as done.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">78</td><td class="code">  <span class="kw">const</span> handleVote = <span class="fn">useCallback</span>((liked) =&gt; {</td><td class="ann key">useCallback memoizes the function so MovieCard's useEffect doesn't re-register event listeners on every render. Without it, onVoteRef.current would always be current anyway (it's a ref), but this is still good practice.</td></tr>
+    <tr><td class="ln">79</td><td class="code">    <span class="kw">if</span> (voted || localDone) <span class="kw">return</span>;</td><td class="ann">Double-guard — MovieCard also guards, but this prevents edge cases from duplicate events.</td></tr>
+    <tr><td class="ln">81</td><td class="code">    socket.<span class="fn">emit</span>(<span class="str">'vote'</span>, { roomId, movieId: movie.id, liked });</td><td class="ann">Fire and forget — no await. Client advances immediately without waiting for server acknowledgment.</td></tr>
+    <tr><td class="ln">84</td><td class="code">    <span class="kw">const</span> next = index + <span class="num">1</span>;</td><td class="ann"></td></tr>
+    <tr><td class="ln">85</td><td class="code">    <span class="kw">if</span> (next &gt;= movies.length) {</td><td class="ann important">This was the last movie. Emit player-done to tell the server this player finished.</td></tr>
+    <tr><td class="ln">86</td><td class="code">      setLocalDone(<span class="kw2">true</span>);</td><td class="ann">Shows "waiting for partner" overlay.</td></tr>
+    <tr><td class="ln">87</td><td class="code">      socket.<span class="fn">emit</span>(<span class="str">'player-done'</span>, roomId);</td><td class="ann">Server calls markDone() — if both done, broadcasts all-done with matches.</td></tr>
+    <tr><td class="ln">89</td><td class="code">      setIndex(next);</td><td class="ann">Advances the movie index for the next card.</td></tr>
+    <tr><td class="ln">90</td><td class="code">      setVoted(<span class="kw2">false</span>);</td><td class="ann">Resets voted so the next card can be swiped.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════ MovieCard.jsx ═══════════════════════════════ -->
+<div id="sec-card">
+<div class="flow-arrow">↓ MovieCard.jsx — gesture detection and card animation ↓</div>
+<div class="file-header f-card">
+  <span class="file-badge f-card" style="font-size:11px">MovieCard.jsx</span>
+  <div>
+    <div class="file-title">client/src/components/MovieCard.jsx</div>
+    <div class="file-desc">The swipeable movie card. Handles touch and mouse drag gestures, velocity-based flick detection, 3D tilt animation, ghost card stack, and LIKE/NOPE badge overlays.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <div class="func-divider"><span class="fkind">constants</span></div>
+  <table class="ct">
+    <tr><td class="ln">3</td><td class="code"><span class="kw">const</span> SWIPE_THRESHOLD = <span class="num">80</span>;</td><td class="ann">80 pixels of drag required for a swipe. Below this, card springs back.</td></tr>
+    <tr><td class="ln">4</td><td class="code"><span class="kw">const</span> VELOCITY_THRESHOLD = <span class="num">0.3</span>;</td><td class="ann key">0.3 px/ms. A fast flick (even short) counts as a swipe. This is how quick flicks feel responsive even under 80px.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">refs</span> <span class="fname">onVoteRef / votedRef</span></div>
+  <table class="ct">
+    <tr><td class="ln">10</td><td class="code">  <span class="kw">const</span> onVoteRef = <span class="fn">useRef</span>(onVote);</td><td class="ann key">Ref to the current onVote prop. Event listeners capture the ref, not the prop — so they always call the latest version without needing to re-register.</td></tr>
+    <tr><td class="ln">11</td><td class="code">  <span class="kw">const</span> votedRef = <span class="fn">useRef</span>(voted);</td><td class="ann key">Same pattern for the voted flag. Event listeners registered in useEffect (below) close over these refs, so they always see the current value.</td></tr>
+    <tr><td class="ln">13</td><td class="code">  <span class="fn">useEffect</span>(() =&gt; { onVoteRef.current = onVote; }, [onVote]);</td><td class="ann">Keeps ref in sync with prop. Runs whenever onVote changes.</td></tr>
+    <tr><td class="ln">14</td><td class="code">  <span class="fn">useEffect</span>(() =&gt; { votedRef.current = voted; }, [voted]);</td><td class="ann">Keeps ref in sync with voted state.</td></tr>
+  </table>
+
+  <div class="explain explain-yellow">
+    <h4>The Stale Closure Trap — Why Refs are Used Here</h4>
+    <p>Event listeners registered inside <code>useEffect([], [])</code> (empty deps) are created once and never re-created. They "close over" the initial values of <code>voted</code> and <code>onVote</code>. If state changes, the listener still references the old values — a "stale closure".</p>
+    <p><strong>Solution:</strong> Use <code>useRef</code>. A ref is an object <code>{ current: value }</code>. The listener closes over the ref <em>object</em> (which never changes), but reads <code>ref.current</code> at call time — getting the latest value.</p>
+    <p><strong>Without this pattern:</strong> voting the first card would work, but the second card's listener would still think <code>voted=false</code> (the initial value), causing double-votes or broken state.</p>
+  </div>
+
+  <div class="func-divider"><span class="fkind">function</span> <span class="fname">triggerExit(liked)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Called by the Pass and Yes buttons. Guards against double-triggering, sets the card exit animation (flies left or right 600px), then calls the parent's onVote after 350ms (matching the animation duration).
+  </div>
+  <table class="ct">
+    <tr><td class="ln">16</td><td class="code">  <span class="kw">function</span> <span class="fn">triggerExit</span>(liked) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">17</td><td class="code">    <span class="kw">if</span> (votedRef.current) <span class="kw">return</span>;</td><td class="ann good">Guard: if already voted (card already flying off), do nothing. Uses ref to get current value.</td></tr>
+    <tr><td class="ln">18</td><td class="code">    votedRef.current = <span class="kw2">true</span>;</td><td class="ann warn">Sets ref immediately (synchronously) before any async operations. Prevents a race condition where two button clicks could both pass the check.</td></tr>
+    <tr><td class="ln">19</td><td class="code">    setIsExiting(<span class="kw2">true</span>);</td><td class="ann">Enables CSS transition so the movement is animated (not instant).</td></tr>
+    <tr><td class="ln">20</td><td class="code">    setDragX(liked ? <span class="num">600</span> : -<span class="num">600</span>);</td><td class="ann">600px off-screen right (like) or left (pass). The CSS transform moves the card this far.</td></tr>
+    <tr><td class="ln">21</td><td class="code">    <span class="fn">setTimeout</span>(() =&gt; onVoteRef.current(liked), <span class="num">350</span>);</td><td class="ann key">350ms matches the CSS transition duration. Waits for card to exit the viewport before calling onVote (which re-mounts the component with the next movie).</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">gesture handler</span> <span class="fname">finish(endX, elapsed)</span></div>
+  <div class="func-summary">
+    <span class="fs-label">What this function does</span>
+    Called when the user releases a drag (touch end or mouse up). Decides whether the drag was long enough OR fast enough to count as a swipe. If yes, triggers exit. If no, springs the card back.
+  </div>
+  <table class="ct">
+    <tr><td class="ln">31</td><td class="code">    <span class="kw">function</span> <span class="fn">finish</span>(endX, elapsed) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">32</td><td class="code">      <span class="kw">if</span> (startX === <span class="kw2">null</span>) <span class="kw">return</span>;</td><td class="ann">Guards against mouseup firing without a preceding mousedown (e.g. user clicked outside then released on card).</td></tr>
+    <tr><td class="ln">33</td><td class="code">      <span class="kw">const</span> delta = endX - startX;</td><td class="ann">Total horizontal displacement. Positive = right (like), negative = left (pass).</td></tr>
+    <tr><td class="ln">37</td><td class="code">      <span class="kw">const</span> velocity = elapsed &gt; <span class="num">0</span> ? <span class="bi">Math</span>.<span class="fn">abs</span>(delta) / elapsed : <span class="num">0</span>;</td><td class="ann key">Velocity in px/ms. Dividing by elapsed time detects quick flicks. Guard against elapsed=0 (instant click) to avoid division by zero.</td></tr>
+    <tr><td class="ln">38</td><td class="code">      <span class="kw">if</span> (<span class="bi">Math</span>.<span class="fn">abs</span>(delta) &gt;= SWIPE_THRESHOLD || velocity &gt;= VELOCITY_THRESHOLD) {</td><td class="ann">OR condition: either a long drag (80px) OR a fast flick (0.3 px/ms) counts as a swipe.</td></tr>
+    <tr><td class="ln">43</td><td class="code">      } <span class="kw">else</span> { setDragX(<span class="num">0</span>); }</td><td class="ann good">Spring back — dragX returns to 0, CSS transition animates the card back to center.</td></tr>
+  </table>
+
+  <div class="func-divider"><span class="fkind">visual state</span> <span class="fname">computed values</span></div>
+  <table class="ct">
+    <tr><td class="ln">93</td><td class="code">  <span class="kw">const</span> rotate = dragX / <span class="num">12</span>;</td><td class="ann">Card tilts as you drag. At 80px drag → 6.7° rotation. Feels natural like a physical card.</td></tr>
+    <tr><td class="ln">94</td><td class="code">  <span class="kw">const</span> tiltY = dragX / <span class="num">18</span>;</td><td class="ann">Subtle 3D Y-axis rotation (perspective tilt). Makes the card look like it's turning in 3D space.</td></tr>
+    <tr><td class="ln">95</td><td class="code">  <span class="kw">const</span> likeOpacity = <span class="bi">Math</span>.<span class="fn">min</span>(<span class="num">1</span>, <span class="bi">Math</span>.<span class="fn">max</span>(<span class="num">0</span>, dragX / SWIPE_THRESHOLD));</td><td class="ann key">LIKE badge fades in proportionally to rightward drag. At 80px drag = fully visible. Clamped 0-1 with min/max.</td></tr>
+    <tr><td class="ln">96</td><td class="code">  <span class="kw">const</span> nopeOpacity = <span class="bi">Math</span>.<span class="fn">min</span>(<span class="num">1</span>, <span class="bi">Math</span>.<span class="fn">max</span>(<span class="num">0</span>, -dragX / SWIPE_THRESHOLD));</td><td class="ann">NOPE badge is negative dragX — fades in proportionally to leftward drag.</td></tr>
+    <tr><td class="ln">97</td><td class="code">  <span class="kw">const</span> transition = (isExiting || dragX === <span class="num">0</span>) ? <span class="str">'transform 0.35s ease'</span> : <span class="str">'none'</span>;</td><td class="ann warn">Transition enabled for: (1) exit animation, (2) spring-back to center. Disabled during active drag — otherwise there's a laggy delay following your finger.</td></tr>
+    <tr><td class="ln">100</td><td class="code">  <span class="kw">const</span> stackProgress = <span class="bi">Math</span>.<span class="fn">min</span>(<span class="num">1</span>, <span class="bi">Math</span>.<span class="fn">abs</span>(dragX) / SWIPE_THRESHOLD);</td><td class="ann">0-1 value: how far through a swipe we are. Ghost cards scale forward as this increases.</td></tr>
+    <tr><td class="ln">163</td><td class="code">    transform: <span class="str">`perspective(900px) translateX(${dragX}px) rotateZ(${rotate}deg) rotateY(${tiltY}deg)`</span>,</td><td class="ann important">CSS 3D transform chain: perspective() sets the 3D space, translateX moves it horizontally, rotateZ tilts it, rotateY creates the 3D lean effect.</td></tr>
+  </table>
+</div>
+
+<!-- ═══════════════════════════════ MatchModal.jsx ═══════════════════════════════ -->
+<div id="sec-modal">
+<div class="flow-arrow">↓ MatchModal.jsx — celebration overlay (defined, imported in Room for future use) ↓</div>
+<div class="file-header f-modal">
+  <span class="file-badge f-modal" style="font-size:11px">MatchModal.jsx</span>
+  <div>
+    <div class="file-title">client/src/components/MatchModal.jsx</div>
+    <div class="file-desc">Match celebration modal with confetti. The CONFETTI array is generated at module load (not on render) for determinism — same positions every time.</div>
+  </div>
+</div>
+<div class="code-wrap">
+  <table class="ct">
+    <tr><td class="ln">2</td><td class="code"><span class="kw">const</span> COLORS = [<span class="str">'#e8c05a'</span>, <span class="str">'#f2d875'</span>, ...];</td><td class="ann">8 colors matching the app's design system. Gold tones and crimson accents.</td></tr>
+    <tr><td class="ln">3</td><td class="code"><span class="kw">const</span> CONFETTI = <span class="bi">Array</span>.<span class="fn">from</span>({ length: <span class="num">32</span> }, (_, i) =&gt; ({</td><td class="ann key">Module-level constant — evaluated ONCE when the file is imported, not on each render. 32 pieces for a dense burst.</td></tr>
+    <tr><td class="ln">5</td><td class="code">  left: <span class="str">`${(i * 3.23 + 3) % 94}%`</span>,</td><td class="ann important">Deterministic position based on index i. 3.23 is chosen to spread pieces across 0-94% without clustering. Module-level ensures these positions are fixed — no re-render randomness.</td></tr>
+    <tr><td class="ln">6</td><td class="code">  delay: <span class="str">`${(i * 0.065) % 1.2}s`</span>,</td><td class="ann">Each piece starts falling at a slightly different time, creating a natural cascade effect.</td></tr>
+    <tr><td class="ln">8</td><td class="code">  color: COLORS[i % COLORS.length],</td><td class="ann">Cycles through the 8 colors. i % 8 distributes 32 pieces evenly across all colors (4 of each).</td></tr>
+    <tr><td class="ln">11</td><td class="code">  isRect: i % <span class="num">3</span> !== <span class="num">0</span>,</td><td class="ann">2/3 of pieces are rectangular (more classic confetti look), 1/3 are circular dots.</td></tr>
+    <tr><td class="ln">14</td><td class="code"><span class="kw">export default function</span> <span class="fn">MatchModal</span>({ movie, onClose }) {</td><td class="ann"></td></tr>
+    <tr><td class="ln">15</td><td class="code">  <span class="kw">if</span> (!movie) <span class="kw">return</span> <span class="kw2">null</span>;</td><td class="ann good">Guard render — returns null if no movie prop. React renders nothing. Allows parent to conditionally include this with {currentMatch && &lt;MatchModal&gt;}.</td></tr>
+  </table>
+</div>
+
+<div class="explain explain-green">
+  <h4>Why Deterministic Confetti?</h4>
+  <p>If CONFETTI were generated inside the component body with <code>Math.random()</code>, every re-render would create new random positions. In React StrictMode (dev), components render twice — you'd see the confetti "jump" to different positions. By computing positions at <strong>module load time</strong> (outside the component), the positions are fixed for the entire session. This is a classic React pattern for stable animations.</p>
+</div>
+</div>
+
+</div><!-- end container -->
+</body>
+</html>
